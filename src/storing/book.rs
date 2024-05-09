@@ -16,3 +16,4 @@ impl Searchable for Book {
         return format!("{} | {}", self.title, self.author);
     }
 }
+    

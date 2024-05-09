@@ -2,7 +2,7 @@ mod args;
 pub mod storing;
 
 
-use std::{fs::File, io::Read};
+//use std::{fs::File, io::Read};
 
 use args::{
     Cli,
@@ -22,8 +22,6 @@ fn main() {
         LibraryInteraction::Search(input) => search(input),
         LibraryInteraction::Borrow(input) => borrow(input),
         LibraryInteraction::Return(input) => return_(input),
-        _ => panic!("Action does not exist!")
-
     };
 
    //let book = Book {
