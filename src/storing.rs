@@ -1,2 +1,3 @@
 pub mod book;
-mod bk;
+pub mod bk;
+mod read;

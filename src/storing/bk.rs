@@ -1,50 +1,70 @@
 use std::collections::HashMap;
 use levenshtein::levenshtein;
 
-use super::book::{Book, Searchable};
+use super::book::Book;
 
 const MAX_DIST: u16 = 10;
 
-struct BkNode {
+pub struct BkTree<'bk> {
+    children_pool: Vec<BkNode<'bk>>
+}
+
+impl<'bk> BkTree<'bk> {
+    pub fn new() -> Self {
+        return BkTree { children_pool: Vec::new() }
+    }
+
+    fn get_mut_root(&mut self) -> &mut BkNode<'bk> {
+        return &mut self.children_pool[0];
+    }
+    
+    fn get_root(&self) -> &BkNode<'bk> {
+        return &self.children_pool[0];
+    }
+
+    fn search(&self, query: String) -> Vec<Book> {
+        let mut result: Vec<Book> = Vec::new();
+        self.get_root().search(&query, &mut result);
+        return result;
+    }
+
+    fn add_book(&mut self, book: Book) {
+        self.children_pool.push(BkNode { identifier: book.title.clone(), book, children: HashMap::new() });
+        self.get_mut_root().add(self.children_pool.last().unwrap());
+    }
+}
+
+struct BkNode<'bk> {
+    identifier: String,
     book: Book,
-    // TODO Memory pooling for nodes for flat memory allocation
-    // and linear retrieval
-    children: HashMap<u16, BkNode>
+    children: HashMap<u16, &'bk BkNode<'bk>>
 }
 
-trait Tree {
-    fn search<'a>(&'a self, query: &str, result: &mut Vec<&'a Book>);
-    fn add(&mut self, book: Book);
-    fn distance_to(&self, target: &str) -> u16;
-    fn child_at(&mut self, dist: u16) -> Option<&mut BkNode>;
-}
-
-impl Tree for BkNode {
-    fn add(&mut self, book: Book) {
-        let dist = self.distance_to(&book.search_str());
+impl<'bk> BkNode<'bk> {
+    fn add(&mut self, new_node: &'bk BkNode<'bk>) {
+        let dist = self.distance_to(&new_node.identifier);
         match self.child_at(dist) {
-            Some(node) => node.add(book),
+            Some(mut node) => node.add(new_node),
             None => {
-                let node = BkNode { book, children: HashMap::new() };
-                self.children.insert(dist, node);
+                self.children.insert(dist, new_node);
             }
         }
     }
 
     fn distance_to(&self, target: &str) -> u16 {
-        return levenshtein(&self.book.search_str(), target).try_into().unwrap();
+        return levenshtein(&self.identifier, target).try_into().unwrap();
     }
 
-    fn child_at(&mut self, dist: u16) -> Option<&mut BkNode> {
+    fn child_at(&mut self, dist: u16) -> Option<&mut &'bk BkNode<'bk>> {
         return self.children.get_mut(&dist);
     }
 
-    fn search<'a>(&'a self, query: &str, result: &mut Vec<&'a Book>) {
+    fn search(&self, query: &str, result: &mut Vec<Book>) {
         let dist = self.distance_to(query);
 
-        for (child_dist, node) in &self.children {
-            if dist.abs_diff(*child_dist) <= dist {
-                result.push(&self.book);
+        for (child_dist, &node) in &self.children {
+            if dist.abs_diff(*child_dist) <= MAX_DIST {
+                result.push(self.book.clone());
                 node.search(query, result);
             }
         }

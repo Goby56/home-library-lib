@@ -2,17 +2,14 @@ mod args;
 pub mod storing;
 
 
-//use std::{fs::File, io::Read};
+use clap::Parser;
 
 use args::{
-    Cli,
+    Cli, LibraryInteraction,
     ShelveCommand, SearchCommand,
     BorrowCommand, ReturnCommand
 };
-use clap::Parser;
-
-use args::LibraryInteraction;
-
+use storing::{bk::BkTree, book::Book};
 
 fn main() {
     let args = Cli::parse();
@@ -24,21 +21,10 @@ fn main() {
         LibraryInteraction::Return(input) => return_(input),
     };
 
-   //let book = Book {
-    //    title: args.title,
-    //    author: args.author,
-    //    pub_date: args.publish_date,
-    //    isbn: args.isbn.parse(),
-    //};
-    //println!("{:?}", book);
-    // TODO CACHE TITLES? ORDER BY ISBN? FAAAST SEARCH
+    let _books = BkTree::new();
 }
 
 fn shelve(input: ShelveCommand) {
-    // let file = File::open("books.txt")?;
-    // 
-    // let mut contents = String::new();
-    // file.read_to_string(&mut contents);
 
     println!("{}", input.title);
 }
