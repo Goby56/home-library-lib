@@ -21,7 +21,7 @@ fn main() {
         LibraryInteraction::Return(input) => return_(input),
     };
 
-    let _books = BkTree::new();
+    //let _books = BkTree::new();
 }
 
 fn shelve(input: ShelveCommand) {

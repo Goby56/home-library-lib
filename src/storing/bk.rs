@@ -5,46 +5,57 @@ use super::book::Book;
 
 const MAX_DIST: u16 = 10;
 
-pub struct BkTree<'bk> {
-    children_pool: Vec<BkNode<'bk>>
+pub struct BkTree {
+    root: BkNode,
+    bk_paths: Vec<TraversalPath>
 }
 
-impl<'bk> BkTree<'bk> {
+struct TraversalPath {
+    path: Vec<u16>
+}
+
+impl TraversalPath {
     pub fn new() -> Self {
-        return BkTree { children_pool: Vec::new() }
+        return TraversalPath { path: Vec::new() }
     }
 
-    fn get_mut_root(&mut self) -> &mut BkNode<'bk> {
-        return &mut self.children_pool[0];
+    fn append(&mut self, dist: u16) {
+        self.path.push(dist);
     }
-    
-    fn get_root(&self) -> &BkNode<'bk> {
-        return &self.children_pool[0];
+}
+
+impl BkTree {
+    pub fn from(book: Book) -> Self {
+        let root = BkNode { identifier: book.title.clone(), book, children: HashMap::new() };
+        return BkTree { root, bk_paths: Vec::new() }
     }
 
     fn search(&self, query: String) -> Vec<Book> {
         let mut result: Vec<Book> = Vec::new();
-        self.get_root().search(&query, &mut result);
+        self.root.search(&query, &mut result);
         return result;
     }
 
     fn add_book(&mut self, book: Book) {
-        self.children_pool.push(BkNode { identifier: book.title.clone(), book, children: HashMap::new() });
-        self.get_mut_root().add(self.children_pool.last().unwrap());
+        let new_node = BkNode { identifier: book.title.clone(), book, children: HashMap::new() };
+        let mut path = TraversalPath::new();
+        self.root.add(&mut path, new_node);
+        self.bk_paths.push(path);
     }
 }
 
-struct BkNode<'bk> {
+struct BkNode {
     identifier: String,
     book: Book,
-    children: HashMap<u16, &'bk BkNode<'bk>>
+    children: HashMap<u16, BkNode>
 }
 
-impl<'bk> BkNode<'bk> {
-    fn add(&mut self, new_node: &'bk BkNode<'bk>) {
+impl BkNode {
+    fn add(&mut self, path: &mut TraversalPath, new_node: BkNode) {
         let dist = self.distance_to(&new_node.identifier);
+        path.append(dist);
         match self.child_at(dist) {
-            Some(mut node) => node.add(new_node),
+            Some(node) => node.add(path, new_node),
             None => {
                 self.children.insert(dist, new_node);
             }
@@ -55,14 +66,14 @@ impl<'bk> BkNode<'bk> {
         return levenshtein(&self.identifier, target).try_into().unwrap();
     }
 
-    fn child_at(&mut self, dist: u16) -> Option<&mut &'bk BkNode<'bk>> {
+    fn child_at(&mut self, dist: u16) -> Option<&mut BkNode> {
         return self.children.get_mut(&dist);
     }
 
     fn search(&self, query: &str, result: &mut Vec<Book>) {
         let dist = self.distance_to(query);
 
-        for (child_dist, &node) in &self.children {
+        for (child_dist, node) in &self.children {
             if dist.abs_diff(*child_dist) <= MAX_DIST {
                 result.push(self.book.clone());
                 node.search(query, result);
