@@ -9,7 +9,7 @@ use args::{
     ShelveCommand, SearchCommand,
     BorrowCommand, ReturnCommand
 };
-use storing::{bk::BkTree, book::Book};
+use storing::{bk::BkTree, book::Book, serialize::Serializer};
 
 fn main() {
     let args = Cli::parse();
@@ -21,11 +21,11 @@ fn main() {
         LibraryInteraction::Return(input) => return_(input),
     };
 
-    //let _books = BkTree::new();
+    let books = BkTree::deserialize("storing/books.txt");
 }
 
 fn shelve(input: ShelveCommand) {
-
+    
     println!("{}", input.title);
 }
 

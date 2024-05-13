@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
 use levenshtein::levenshtein;
 
 use super::book::Book;
@@ -6,12 +6,12 @@ use super::book::Book;
 const MAX_DIST: u16 = 10;
 
 pub struct BkTree {
-    root: BkNode,
-    bk_paths: Vec<TraversalPath>
+    pub root: BkNode,
+    pub bk_paths: Vec<TraversalPath>
 }
 
-struct TraversalPath {
-    path: Vec<u16>
+pub struct TraversalPath {
+    pub path: Vec<u16>
 }
 
 impl TraversalPath {
@@ -26,7 +26,7 @@ impl TraversalPath {
 
 impl BkTree {
     pub fn from(book: Book) -> Self {
-        let root = BkNode { identifier: book.title.clone(), book, children: HashMap::new() };
+        let root = BkNode::from(book);
         return BkTree { root, bk_paths: Vec::new() }
     }
 
@@ -37,20 +37,24 @@ impl BkTree {
     }
 
     fn add_book(&mut self, book: Book) {
-        let new_node = BkNode { identifier: book.title.clone(), book, children: HashMap::new() };
+        let new_node = BkNode::from(book);
         let mut path = TraversalPath::new();
         self.root.add(&mut path, new_node);
         self.bk_paths.push(path);
     }
 }
 
-struct BkNode {
+pub struct BkNode {
     identifier: String,
-    book: Book,
-    children: HashMap<u16, BkNode>
+    pub(super) book: Book,
+    pub(super) children: HashMap<u16, BkNode>
 }
 
 impl BkNode {
+    pub(super) fn from(book: Book) -> Self {
+        return BkNode { identifier: book.title.clone(), book, children: HashMap::new() }
+    }
+
     fn add(&mut self, path: &mut TraversalPath, new_node: BkNode) {
         let dist = self.distance_to(&new_node.identifier);
         path.append(dist);
