@@ -1,27 +1,45 @@
-use std::{collections::HashMap};
+use std::{collections::HashMap, slice::Iter, fmt::Debug};
 use levenshtein::levenshtein;
 
 use super::book::Book;
 
 const MAX_DIST: u16 = 10;
 
+#[derive(Debug)]
 pub struct BkTree {
     pub root: BkNode,
     pub bk_paths: Vec<TraversalPath>
 }
 
-pub struct TraversalPath {
-    pub path: Vec<u16>
-}
+#[derive(Debug)]
+pub struct TraversalPath(pub Vec<u16>);
+
 
 impl TraversalPath {
     pub fn new() -> Self {
-        return TraversalPath { path: Vec::new() }
+        return TraversalPath(Vec::new());
     }
 
-    fn append(&mut self, dist: u16) {
-        self.path.push(dist);
+    pub fn append(&mut self, dist: u16) {
+        self.0.push(dist);
     }
+
+    pub fn length(&self) -> usize {
+        return self.0.len();
+    }
+
+    pub fn all_but_last(&self) -> &[u16] {
+        return &self.0[..self.length() - 1];
+    }
+
+    pub fn last(&self) -> u16 {
+        return *self.0.last().unwrap();
+    }
+
+    pub fn iter(&self) -> Iter<'_, u16> {
+        return self.0.iter();
+    }
+
 }
 
 impl BkTree {
@@ -30,13 +48,13 @@ impl BkTree {
         return BkTree { root, bk_paths: Vec::new() }
     }
 
-    fn search(&self, query: String) -> Vec<Book> {
+    pub fn search(&self, query: String) -> Vec<Book> {
         let mut result: Vec<Book> = Vec::new();
         self.root.search(&query, &mut result);
         return result;
     }
 
-    fn add_book(&mut self, book: Book) {
+    pub fn add_book(&mut self, book: Book) {
         let new_node = BkNode::from(book);
         let mut path = TraversalPath::new();
         self.root.add(&mut path, new_node);
@@ -44,6 +62,7 @@ impl BkTree {
     }
 }
 
+#[derive(Debug)]
 pub struct BkNode {
     identifier: String,
     pub(super) book: Book,

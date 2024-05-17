@@ -27,7 +27,7 @@ pub struct  ShelveCommand {
     /// Book author
     pub author: String,
     /// Publish date
-    pub publish_date: i16,
+    pub publish_date: u16,
     /// ISBN
     pub isbn: String,
 }

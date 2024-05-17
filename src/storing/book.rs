@@ -2,13 +2,12 @@ use std::str::FromStr;
 
 use isbn::Isbn;
 
-
-
+#[derive(Debug)]
 pub struct Book {
     pub title: String,
     pub author: String,
-    pub(super) pub_date: u16,
-    pub(super) isbn: Isbn
+    pub pub_date: u16,
+    pub isbn: Isbn
 }
 
 impl Clone for Book {
