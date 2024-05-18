@@ -3,7 +3,7 @@ use levenshtein::levenshtein;
 
 use super::book::Book;
 
-const MAX_DIST: u16 = 10;
+const MAX_DIST: u16 = 5;
 
 #[derive(Debug)]
 pub struct BkTree {
@@ -48,8 +48,8 @@ impl BkTree {
         return BkTree { root, bk_paths: Vec::new() }
     }
 
-    pub fn search(&self, query: String) -> Vec<Book> {
-        let mut result: Vec<Book> = Vec::new();
+    pub fn search(&self, query: String) -> Vec<SearchResult> {
+        let mut result: Vec<SearchResult> = Vec::new();
         self.root.search(&query, &mut result);
         return result;
     }
@@ -67,6 +67,11 @@ pub struct BkNode {
     identifier: String,
     pub(super) book: Book,
     pub(super) children: HashMap<u16, BkNode>
+}
+
+pub struct SearchResult {
+    pub book: Book,
+    pub distance: u16
 }
 
 impl BkNode {
@@ -93,12 +98,15 @@ impl BkNode {
         return self.children.get_mut(&dist);
     }
 
-    fn search(&self, query: &str, result: &mut Vec<Book>) {
+    fn search(&self, query: &str, result: &mut Vec<SearchResult>) {
         let dist = self.distance_to(query);
-
+        
+        if dist <= MAX_DIST {
+            result.push(SearchResult { book: self.book.clone(), distance: dist });
+        }
         for (child_dist, node) in &self.children {
-            if dist.abs_diff(*child_dist) <= MAX_DIST {
-                result.push(self.book.clone());
+            let diff = dist.abs_diff(*child_dist);
+            if diff <= MAX_DIST {
                 node.search(query, result);
             }
         }

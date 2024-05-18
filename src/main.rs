@@ -13,7 +13,7 @@ use args::{
 use isbn::Isbn;
 use storing::{bk::BkTree, book::Book, serialize::Serializer};
 
-const LIBRARY_PATH: &str = "books.txt";
+const LIBRARY_PATH: &str = "data/books.txt";
 
 fn main() {
     let args = Cli::parse();
@@ -27,8 +27,6 @@ fn main() {
         LibraryInteraction::Return(input) => return_(input, &mut library),
     };
 
-    println!("{:?}", library);
-    
     if should_save {
         write_books_to_disk(LIBRARY_PATH, library.serialize());
     }
@@ -58,14 +56,15 @@ fn shelve(input: ShelveCommand, library: &mut BkTree) -> bool {
         title: input.title, author: input.author, 
         pub_date: input.publish_date, isbn
     };
+    println!("Adding book: {}", book.title);
     library.add_book(book);
     return true;
 }
 
 fn search(input: SearchCommand, library: &BkTree) -> bool {
-    let result = library.search(input.search_str);
-    for book in result {
-        println!("{}", book.title);
+    let search_result = library.search(input.search_str);
+    for book in search_result {
+        println!("{} ({})", book.book.title, book.distance);
     }
     return false;
 }
