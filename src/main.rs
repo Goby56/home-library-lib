@@ -8,42 +8,46 @@ use clap::Parser;
 use args::{
     Cli, LibraryInteraction,
     ShelveCommand, SearchCommand,
-    BorrowCommand, ReturnCommand
+    BorrowCommand, ReturnCommand,
+    ListBorrowsCommand
 };
 use isbn::Isbn;
-use storing::{bk::BkTree, book::Book, serialize::Serializer};
+use levenshtein::levenshtein;
+use storing::{bk::{BkTree, TraversalPath}, book::Book, serialize::Serializer};
 
-const LIBRARY_PATH: &str = "data/books.txt";
+const LIBRARY_PATH: &str = "data/library.txt";
+const BORROWS_PATH: &str = "data/borrows.txt";
 
 fn main() {
     let args = Cli::parse();
 
-    let mut library = BkTree::deserialize(&read_books_from_disk(LIBRARY_PATH));
+    let mut library = BkTree::deserialize(&read_file(LIBRARY_PATH));
     
     let should_save = match args.action {
         LibraryInteraction::Shelve(input) => shelve(input, &mut library),
         LibraryInteraction::Search(input) => search(input, &library),
         LibraryInteraction::Borrow(input) => borrow(input, &mut library),
         LibraryInteraction::Return(input) => return_(input, &mut library),
+        LibraryInteraction::ListBorrows(input) => list_borrows(input, &library)
     };
 
     if should_save {
-        write_books_to_disk(LIBRARY_PATH, library.serialize());
+        write_file(LIBRARY_PATH, library.serialize());
     }
 }
 
-fn read_books_from_disk(path: &str) -> String {
+fn read_file(path: &str) -> String { 
     let mut file = File::open(path).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
     return contents;
 }
 
-fn write_books_to_disk(path: &str, deserialized_str: String) {
+fn write_file(path: &str, deserialized_str: String) {
     let mut file = File::create(path).unwrap();
     match file.write_all(deserialized_str.as_bytes()) {
        Ok(_) => (),
-       Err(error) => panic!("Can't save books to disk: {}", error)
+       Err(error) => panic!("Could not save to disk: {}", error)
     };
 }
 
@@ -54,7 +58,7 @@ fn shelve(input: ShelveCommand, library: &mut BkTree) -> bool {
     };
     let book = Book { 
         title: input.title, author: input.author, 
-        pub_date: input.publish_date, isbn
+        pub_date: input.publish_date, isbn, borrower: None
     };
     println!("Adding book: {}", book.title);
     library.add_book(book);
@@ -70,6 +74,7 @@ fn search(input: SearchCommand, library: &BkTree) -> bool {
 }
 
 fn borrow(input: BorrowCommand, library: &mut BkTree) -> bool {
+    
     println!("Borrowed book with ISBN: {}", input.isbn);
     return true;
 }
@@ -77,6 +82,42 @@ fn borrow(input: BorrowCommand, library: &mut BkTree) -> bool {
 fn return_(input: ReturnCommand, library: &mut BkTree) -> bool {
     println!("Returned book with ISBN: {}", input.isbn);
     return true;
+}
+
+fn list_borrows(input: ListBorrowsCommand, library: &BkTree) -> bool {
+    let mut file_lines = read_file(BORROWS_PATH).lines();
+    let users = file_lines.next().unwrap().split(",");
+    let mut borrower = &*input.borrower;
+    let mut shortest_dist = 10;
+    for u in users {
+        let dist = levenshtein(&input.borrower, u);
+        if  dist < shortest_dist {
+            shortest_dist = dist;
+            borrower = u;
+        }
+    }
+    if borrower == input.borrower {
+        println!("Could not find user: {}", input.borrower);
+        return false;
+    }
+    let result: Vec<Book> = Vec::new();
+    for l in file_lines {
+        let (b, path) = l.split_once(";").unzip();
+        if b.unwrap() == borrower {
+            let tp = TraversalPath::deserialize(&path.unwrap());
+            result.push(library.get_book(tp));
+        }
+    }
+    if result.is_empty() {
+        println!("{} has not borrowed any books", borrower);
+        return false;
+    }
+    println!("{} has borrowed the following book(s)", borrower);
+    for r in result {
+        println!("{}", r);
+    }
+
+    return false;
 }
 
 

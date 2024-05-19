@@ -18,6 +18,8 @@ pub enum LibraryInteraction {
     Borrow(BorrowCommand),
     /// Return a book that you have borrowed
     Return(ReturnCommand),
+    /// See which books you have borrowed
+    ListBorrows(ListBorrowsCommand)
 }
 
 #[derive(Debug, Args)]
@@ -41,11 +43,17 @@ pub struct SearchCommand {
 #[derive(Debug, Args)]
 pub struct BorrowCommand {
     /// ISBN of the book you want to borrow
-    pub isbn: String
+    pub isbn: String,
+    pub borrower: String
 }
 
 #[derive(Debug, Args)]
 pub struct ReturnCommand {
     /// ISBN of the book you want to return
     pub isbn: String
+}
+
+#[derive(Debug, Args)]
+pub struct ListBorrowsCommand {
+    pub borrower: String
 }

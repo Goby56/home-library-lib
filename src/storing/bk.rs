@@ -1,9 +1,7 @@
-use std::{collections::HashMap, slice::Iter, fmt::Debug};
+use std::{collections::HashMap, slice::Iter, fmt::Debug, ops::Mul};
 use levenshtein::levenshtein;
 
 use super::book::Book;
-
-const MAX_DIST: u16 = 5;
 
 #[derive(Debug)]
 pub struct BkTree {
@@ -50,7 +48,8 @@ impl BkTree {
 
     pub fn search(&self, query: String) -> Vec<SearchResult> {
         let mut result: Vec<SearchResult> = Vec::new();
-        self.root.search(&query, &mut result);
+        let tolerance = (query.len() as f32 * 0.7).floor().max(1.0) as u16;
+        self.root.search(&query, tolerance, &mut result);
         return result;
     }
 
@@ -59,6 +58,14 @@ impl BkTree {
         let mut path = TraversalPath::new();
         self.root.add(&mut path, new_node);
         self.bk_paths.push(path);
+    }
+
+    pub fn get_book(&self, path: TraversalPath) -> Book {
+        let mut node = &self.root;
+        for dist in path.iter() {
+            node = node.children.get(dist).unwrap();
+        }
+        return node.book.clone();
     }
 }
 
@@ -98,16 +105,16 @@ impl BkNode {
         return self.children.get_mut(&dist);
     }
 
-    fn search(&self, query: &str, result: &mut Vec<SearchResult>) {
+    fn search(&self, query: &str, tolerance: u16, result: &mut Vec<SearchResult>) {
         let dist = self.distance_to(query);
         
-        if dist <= MAX_DIST {
+        if dist <= tolerance {
             result.push(SearchResult { book: self.book.clone(), distance: dist });
         }
         for (child_dist, node) in &self.children {
             let diff = dist.abs_diff(*child_dist);
-            if diff <= MAX_DIST {
-                node.search(query, result);
+            if diff <= tolerance {
+                node.search(query, tolerance, result);
             }
         }
     }
