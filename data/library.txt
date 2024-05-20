@@ -1,5 +1,6 @@
-Lord of the Rings,Tolkien,1954,9788845292613
-17;1984,George Orwell,1949,9780198185215
-4;Lord of the Flies,William Golding,1954,9781573226127
-4,8;Dick of the Rings,Casper Bené,2024,9781573226127
-20;Thinking Fast and Slow,Daniel Kahneman,2011,9780141033570
+Lord of the Rings,Tolkien,1954,9788845292613,
+17;1984,George Orwell,1949,9780198185215,
+4;Lord of the Flies,William Golding,1954,9781573226127,
+4,8;Dick of the Rings,Casper Bené,2024,9781573226127,
+20;Thinking Fast and Slow,Daniel Kahneman,2011,9780141033570,
+14;Hårs Biografi,Hårs,2024,9780977476077,

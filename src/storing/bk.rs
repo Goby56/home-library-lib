@@ -1,4 +1,4 @@
-use std::{collections::HashMap, slice::Iter, fmt::Debug, ops::Mul};
+use std::{collections::HashMap, slice::Iter, fmt::Debug};
 use levenshtein::levenshtein;
 
 use super::book::Book;
@@ -49,7 +49,7 @@ impl BkTree {
     pub fn search(&self, query: String) -> Vec<SearchResult> {
         let mut result: Vec<SearchResult> = Vec::new();
         let tolerance = (query.len() as f32 * 0.7).floor().max(1.0) as u16;
-        self.root.search(&query, tolerance, &mut result);
+        self.root.search(&query.to_lowercase(), tolerance, &mut result);
         return result;
     }
 
@@ -98,7 +98,7 @@ impl BkNode {
     }
 
     fn distance_to(&self, target: &str) -> u16 {
-        return levenshtein(&self.identifier, target).try_into().unwrap();
+        return levenshtein(&self.identifier.to_lowercase(), target).try_into().unwrap();
     }
 
     fn child_at(&mut self, dist: u16) -> Option<&mut BkNode> {

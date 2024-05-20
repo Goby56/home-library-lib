@@ -37,7 +37,15 @@ pub struct  ShelveCommand {
 #[derive(Debug, Args)]
 pub struct SearchCommand {
     /// Title, author, publish date or ISBN
-    pub search_str: String
+    pub search_str: String,
+    /// The maximum number of results
+    #[arg(short, long)]
+    pub limit: Option<u16>,
+    /// Provide the year the books should be published. Can be an inequality expression such as
+    /// '>=1990' (only books published after 1990)
+    #[arg(short, long)]
+    pub year_expr: Option<String>
+
 }
 
 #[derive(Debug, Args)]

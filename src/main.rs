@@ -85,12 +85,13 @@ fn return_(input: ReturnCommand, library: &mut BkTree) -> bool {
 }
 
 fn list_borrows(input: ListBorrowsCommand, library: &BkTree) -> bool {
-    let mut file_lines = read_file(BORROWS_PATH).lines();
+    let file_str = read_file(BORROWS_PATH);
+    let mut file_lines = file_str.lines();
     let users = file_lines.next().unwrap().split(",");
-    let mut borrower = &*input.borrower;
+    let mut borrower = &*input.borrower.to_lowercase();
     let mut shortest_dist = 10;
     for u in users {
-        let dist = levenshtein(&input.borrower, u);
+        let dist = levenshtein(&input.borrower.to_lowercase(), u);
         if  dist < shortest_dist {
             shortest_dist = dist;
             borrower = u;
@@ -100,7 +101,7 @@ fn list_borrows(input: ListBorrowsCommand, library: &BkTree) -> bool {
         println!("Could not find user: {}", input.borrower);
         return false;
     }
-    let result: Vec<Book> = Vec::new();
+    let mut result: Vec<Book> = Vec::new();
     for l in file_lines {
         let (b, path) = l.split_once(";").unzip();
         if b.unwrap() == borrower {

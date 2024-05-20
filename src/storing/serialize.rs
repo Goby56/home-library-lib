@@ -80,13 +80,14 @@ impl Serializer for BkNode {
 
 impl Serializer for Book {
     fn serialize(&self) -> String {
-       return format!("{},{},{},{}", self.title, self.author, self.pub_date, self.isbn.to_string());
+       return format!("{},{},{},{},", self.title, self.author, self.pub_date, self.isbn.to_string());
     }
 
     fn deserialize(serialized_book: &str) -> Self {
         let fields: Vec<&str> = serialized_book.split(',').collect();
+        let borrower = if fields[4] == "" { Option::None } else { Option::Some(fields[4].to_string()) };
         return Book { 
             title: fields[0].to_string(), author: fields[1].to_string(), pub_date: fields[2].parse::<u16>().unwrap(), 
-            isbn: Isbn::from_str(fields[3]).unwrap() }
+            isbn: Isbn::from_str(fields[3]).unwrap(), borrower }
     }
 }
