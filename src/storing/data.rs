@@ -1,9 +1,14 @@
-use std::{str::FromStr, fmt::Display, collections::HashMap};
+use std::{str::FromStr, fmt::Display};
 
 use isbn::Isbn;
 
-use super::bk::{TraversalPath, Nodeable, BkNode};
+use super::bk::TraversalPath;
 
+#[derive(Clone)]
+pub enum TreeData {
+    BkBook(Book),
+    BkAuthor(Author)
+}
 
 #[derive(Debug)]
 pub struct Book {
@@ -12,6 +17,22 @@ pub struct Book {
     pub pub_date: u16,
     pub isbn: Isbn,
     pub borrower: Option<String>
+}
+
+impl Book {
+    pub fn borrower_as_str(b: Option<String>) -> String {
+        match b {
+            Some(borrower) => borrower,
+            None => String::from("")
+        }
+    }
+
+    pub fn borrower_as_opt(b: &str) -> Option<String> {
+        match b {
+            "" => None,
+            _ => Some(b.to_string())
+        }
+    }
 }
 
 impl Display for Book {
@@ -32,12 +53,6 @@ impl Clone for Book {
     }
 }
 
-impl Nodeable for Book {
-    fn as_node(&self) -> BkNode<Self> where Self: Sized {
-        return BkNode { identifier: self.title.clone(), data: self.clone(), children: HashMap::new() };
-    }
-}
-
 pub struct Author {
     pub name: String,
     pub books: Vec<TraversalPath>
@@ -49,11 +64,5 @@ impl Clone for Author {
             name: self.name.clone(),
             books: self.books.to_vec()
         }
-    }
-}
-
-impl Nodeable for Author {
-    fn as_node(&self) -> BkNode<Self> where Self: Sized {
-        return BkNode { identifier: self.name.clone(), data: self.clone(), children: HashMap::new() };
     }
 }

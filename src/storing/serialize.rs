@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use isbn::Isbn;
 
-use super::bk::{BkTree, BkNode, TraversalPath, Nodeable};
-use super::data::Book;
+use super::bk::{BkTree, BkNode, TraversalPath};
+use super::data::{Book, TreeData, Author};
 
 pub trait Serializer {
     fn serialize(&self) -> String;
@@ -11,7 +11,7 @@ pub trait Serializer {
     fn deserialize(ser_str: &str) -> Self;
 }
 
-impl Serializer for BkTree<Book> {
+impl Serializer for BkTree {
     fn serialize(&self) -> String {
         let mut deserialized_nodes: Vec<String> = Vec::new();
         
@@ -32,12 +32,12 @@ impl Serializer for BkTree<Book> {
     fn deserialize(ser_nodes: &str) -> Self {
         let mut lines = ser_nodes.lines();
         // First line only includes book
-        let mut tree = BkTree::from(Book::deserialize(lines.next().unwrap()));
+        let mut tree = BkTree::from(TreeData::deserialize(lines.next().unwrap()));
         for line in lines {
             let (path_str, book_str) = line.split_once(";").unzip();
             // Traversal path
             let tp = TraversalPath::deserialize(path_str.unwrap());
-            let node = Book::deserialize(book_str.unwrap()).as_node();
+            let node = BkNode::from(TreeData::deserialize(book_str.unwrap()));
             let mut curr_node = &mut tree.root;
             for dist in tp.all_but_last() {
                 curr_node = curr_node.children.get_mut(dist).unwrap();
@@ -67,27 +67,47 @@ impl Serializer for TraversalPath {
     }
 }
 
-impl Serializer for BkNode<Book> {
+impl Serializer for BkNode {
     fn serialize(&self) -> String {
         return self.data.serialize();
     }
 
     fn deserialize(serialized_book: &str) -> Self {
-        let book = Book::deserialize(serialized_book);
-        return book.as_node();
+        let data = TreeData::deserialize(serialized_book);
+        return BkNode::from(data);
+    }
+}
+
+impl Serializer for TreeData {
+    fn serialize(&self) -> String {
+        match self {
+            TreeData::BkBook(book) => book.serialize(),
+            TreeData::BkAuthor(author) => author.name.clone()
+        }
+    }
+
+    fn deserialize(ser_str: &str) -> Self {
+        match ser_str.chars().filter(|c| *c == ',').count() {
+            0 => Self::BkAuthor(Author { name: ser_str.to_string(), books: Vec::new() }),
+            4 => Self::BkBook(Book::deserialize(ser_str)),
+            _ => panic!("Too many arguments was provided")
+        }
     }
 }
 
 impl Serializer for Book {
     fn serialize(&self) -> String {
-       return format!("{},{},{},{},", self.title, self.author, self.pub_date, self.isbn.to_string());
+        format!(
+            "{},{},{},{},{}", self.title, self.author, self.pub_date, 
+            self.isbn.to_string(), Book::borrower_as_str(self.borrower.clone())
+            )
     }
 
-    fn deserialize(serialized_book: &str) -> Self {
-        let fields: Vec<&str> = serialized_book.split(',').collect();
-        let borrower = if fields[4] == "" { Option::None } else { Option::Some(fields[4].to_string()) };
-        return Book { 
+    fn deserialize(ser_str: &str) -> Self {
+        let fields: Vec<&str> = ser_str.split(',').collect();
+        Book { 
             title: fields[0].to_string(), author: fields[1].to_string(), pub_date: fields[2].parse::<u16>().unwrap(), 
-            isbn: Isbn::from_str(fields[3]).unwrap(), borrower }
+            isbn: Isbn::from_str(fields[3]).unwrap(), borrower: Book::borrower_as_opt(fields[4])
+        }
     }
 }

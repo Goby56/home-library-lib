@@ -1,13 +1,14 @@
-use std::{collections::HashMap, slice::Iter, fmt::Debug};
+use std::{collections::HashMap, slice::Iter};
 use levenshtein::levenshtein;
 
-#[derive(Debug)]
-pub struct BkTree<T> {
-    pub root: BkNode<T>,
+use super::data::{TreeData};
+
+pub struct BkTree {
+    pub root: BkNode,
     pub bk_paths: Vec<TraversalPath>
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct TraversalPath(pub Vec<u16>);
 
 
@@ -38,26 +39,26 @@ impl TraversalPath {
 
 }
 
-impl <T: Clone + Nodeable> BkTree<T> {
-    pub fn from(data: T) -> Self {
-        return BkTree { root: data.as_node(), bk_paths: Vec::new() }
+impl BkTree {
+    pub fn from(data: TreeData) -> Self {
+        return BkTree { root: BkNode::from(data), bk_paths: Vec::new() }
     }
 
-    pub fn add_node(&mut self, data: T) {
-        let new_node = data.as_node();
+    pub fn add_node(&mut self, data: TreeData) {
+        let new_node = BkNode::from(data);
         let mut path = TraversalPath::new();
         self.root.add(&mut path, new_node);
         self.bk_paths.push(path);
     }
 
-    pub fn search(&self, query: String) -> Vec<SearchResult<T>> {
-        let mut result: Vec<SearchResult<T>> = Vec::new();
+    pub fn search(&self, query: String) -> Vec<SearchResult> {
+        let mut result: Vec<SearchResult> = Vec::new();
         let tolerance = (query.len() as f32 * 0.7).floor().max(1.0) as u16;
         self.root.search(&query.to_lowercase(), tolerance, &mut result);
         return result;
     }
     
-    pub fn get_contents(&self, path: TraversalPath) -> &T {
+    pub fn get_contents(&self, path: TraversalPath) -> &TreeData {
         let mut node = &self.root;
         for dist in path.iter() {
             node = node.children.get(dist).unwrap();
@@ -66,20 +67,14 @@ impl <T: Clone + Nodeable> BkTree<T> {
     }
 }
 
-#[derive(Debug)]
-pub struct BkNode<T> {
+pub struct BkNode {
     pub identifier: String,
-    pub data: T,
-    pub children: HashMap<u16, BkNode<T>>
+    pub data: TreeData,
+    pub children: HashMap<u16, BkNode>
 }
 
-
-pub trait Nodeable {
-    fn as_node(&self) -> BkNode<Self> where Self: Sized;
-}
-
-impl <T: Clone> BkNode<T> {
-    fn add(&mut self, path: &mut TraversalPath, new_node: BkNode<T>) {
+impl BkNode {
+    fn add(&mut self, path: &mut TraversalPath, new_node: BkNode) {
         let dist = self.distance_to(&new_node.identifier);
         path.append(dist);
         match self.child_at(dist) {
@@ -90,7 +85,7 @@ impl <T: Clone> BkNode<T> {
         }
     }
 
-    fn search(&self, query: &str, tolerance: u16, result: &mut Vec<SearchResult<T>>) {
+    fn search(&self, query: &str, tolerance: u16, result: &mut Vec<SearchResult>) {
         let dist = self.distance_to(query);
         
         if dist <= tolerance {
@@ -108,12 +103,29 @@ impl <T: Clone> BkNode<T> {
         return levenshtein(&self.identifier.to_lowercase(), target).try_into().unwrap();
     }
 
-    fn child_at(&mut self, dist: u16) -> Option<&mut BkNode<T>> {
+    fn child_at(&mut self, dist: u16) -> Option<&mut BkNode> {
         return self.children.get_mut(&dist);
+    }
+
+    pub fn from(data: TreeData) -> Self {
+        match data.clone() {
+            TreeData::BkBook(book) => {
+                BkNode { 
+                    identifier: book.title.clone(), 
+                    data, children: HashMap::new() 
+                }
+            },
+            TreeData::BkAuthor(author) => {
+                BkNode {
+                    identifier: author.name.clone(),
+                    data, children: HashMap::new()
+                }
+            }
+        }
     }
 }
 
-pub struct SearchResult<T> {
-    pub data: T,
+pub struct SearchResult {
+    pub data: TreeData,
     pub distance: u16
 }
