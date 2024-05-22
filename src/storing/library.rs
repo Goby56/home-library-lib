@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
-use super::{book::Book, bk::{BkTree, TraversalPath}};
+use super::bk::BkTree;
+use super::data::{Book, Author};
 
 pub struct Library {
-    pub bk_tree: BkTree,
-    pub authors: HashMap<String, Vec<TraversalPath>>,
-    pub b_tree:  
+    pub books: BkTree<Book>,
+    pub author: BkTree<Author>,
+    pub flat_books: Vec<Book>
 }

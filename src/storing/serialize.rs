@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use isbn::Isbn;
 
-use super::bk::{BkTree, BkNode, TraversalPath};
-use super::book::Book;
+use super::bk::{BkTree, BkNode, TraversalPath, Nodeable};
+use super::data::Book;
 
 pub trait Serializer {
     fn serialize(&self) -> String;
@@ -11,11 +11,11 @@ pub trait Serializer {
     fn deserialize(ser_str: &str) -> Self;
 }
 
-impl Serializer for BkTree {
+impl Serializer for BkTree<Book> {
     fn serialize(&self) -> String {
         let mut deserialized_nodes: Vec<String> = Vec::new();
         
-        deserialized_nodes.push(format!("{}", self.root.book.serialize()));
+        deserialized_nodes.push(format!("{}", self.root.data.serialize()));
         for traversal in &self.bk_paths {
             let mut curr_node = &self.root;
             for key in traversal.iter() {
@@ -37,7 +37,7 @@ impl Serializer for BkTree {
             let (path_str, book_str) = line.split_once(";").unzip();
             // Traversal path
             let tp = TraversalPath::deserialize(path_str.unwrap());
-            let node = BkNode::from(Book::deserialize(book_str.unwrap()));
+            let node = Book::deserialize(book_str.unwrap()).as_node();
             let mut curr_node = &mut tree.root;
             for dist in tp.all_but_last() {
                 curr_node = curr_node.children.get_mut(dist).unwrap();
@@ -67,14 +67,14 @@ impl Serializer for TraversalPath {
     }
 }
 
-impl Serializer for BkNode {
+impl Serializer for BkNode<Book> {
     fn serialize(&self) -> String {
-        return self.book.serialize();
+        return self.data.serialize();
     }
 
     fn deserialize(serialized_book: &str) -> Self {
         let book = Book::deserialize(serialized_book);
-        return BkNode::from(book);
+        return book.as_node();
     }
 }
 

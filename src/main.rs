@@ -13,7 +13,7 @@ use args::{
 };
 use isbn::Isbn;
 use levenshtein::levenshtein;
-use storing::{bk::{BkTree, TraversalPath}, book::Book, serialize::Serializer};
+use storing::{bk::{BkTree, TraversalPath}, data::Book, serialize::Serializer};
 
 const LIBRARY_PATH: &str = "data/library.txt";
 const BORROWS_PATH: &str = "data/borrows.txt";
@@ -51,7 +51,7 @@ fn write_file(path: &str, deserialized_str: String) {
     };
 }
 
-fn shelve(input: ShelveCommand, library: &mut BkTree) -> bool {
+fn shelve(input: ShelveCommand, library: &mut BkTree<Book>) -> bool {
     let isbn = match Isbn::from_str(&input.isbn) {
        Ok(result) => result,
        Err(error) => panic!("Encountered problem converting input to ISBN due to: {:?}", error)
@@ -61,30 +61,29 @@ fn shelve(input: ShelveCommand, library: &mut BkTree) -> bool {
         pub_date: input.publish_date, isbn, borrower: None
     };
     println!("Adding book: {}", book.title);
-    library.add_book(book);
+    library.add_node(book);
     return true;
 }
 
-fn search(input: SearchCommand, library: &BkTree) -> bool {
+fn search(input: SearchCommand, library: &BkTree<Book>) -> bool {
     let search_result = library.search(input.search_str);
     for book in search_result {
-        println!("{} ({})", book.book.title, book.distance);
+        println!("{} ({})", book.data.title, book.distance);
     }
     return false;
 }
 
-fn borrow(input: BorrowCommand, library: &mut BkTree) -> bool {
-    
+fn borrow(input: BorrowCommand, library: &mut BkTree<Book>) -> bool {
     println!("Borrowed book with ISBN: {}", input.isbn);
     return true;
 }
 
-fn return_(input: ReturnCommand, library: &mut BkTree) -> bool {
+fn return_(input: ReturnCommand, library: &mut BkTree<Book>) -> bool {
     println!("Returned book with ISBN: {}", input.isbn);
     return true;
 }
 
-fn list_borrows(input: ListBorrowsCommand, library: &BkTree) -> bool {
+fn list_borrows(input: ListBorrowsCommand, library: &BkTree<Book>) -> bool {
     let file_str = read_file(BORROWS_PATH);
     let mut file_lines = file_str.lines();
     let users = file_lines.next().unwrap().split(",");
@@ -101,12 +100,12 @@ fn list_borrows(input: ListBorrowsCommand, library: &BkTree) -> bool {
         println!("Could not find user: {}", input.borrower);
         return false;
     }
-    let mut result: Vec<Book> = Vec::new();
+    let mut result: Vec<&Book> = Vec::new();
     for l in file_lines {
         let (b, path) = l.split_once(";").unzip();
         if b.unwrap() == borrower {
             let tp = TraversalPath::deserialize(&path.unwrap());
-            result.push(library.get_book(tp));
+            result.push(library.get_contents(tp));
         }
     }
     if result.is_empty() {
