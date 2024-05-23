@@ -2,14 +2,6 @@ use std::{str::FromStr, fmt::Display};
 
 use isbn::Isbn;
 
-use super::bk::TraversalPath;
-
-#[derive(Clone)]
-pub enum TreeData {
-    BkBook(Book),
-    BkAuthor(Author)
-}
-
 #[derive(Debug)]
 pub struct Book {
     pub title: String,
@@ -50,19 +42,5 @@ impl Clone for Book {
             isbn: Isbn::from_str(&self.isbn.to_string()).unwrap(),
             borrower: self.borrower.clone()
         };
-    }
-}
-
-pub struct Author {
-    pub name: String,
-    pub books: Vec<TraversalPath>
-}
-
-impl Clone for Author {
-    fn clone(&self) -> Self {
-        return Author {
-            name: self.name.clone(),
-            books: self.books.to_vec()
-        }
     }
 }

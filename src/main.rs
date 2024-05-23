@@ -13,17 +13,15 @@ use args::{
 };
 use isbn::Isbn;
 use levenshtein::levenshtein;
-use storing::{bk::{BkTree, TraversalPath}, data::Book, serialize::Serializer};
+use storing::{bk::{TraversalPath}, data::Book, serialize::Serializer, library::Library};
 
-use crate::storing::data::TreeData;
-
-const LIBRARY_PATH: &str = "data/library.txt";
+const LIBRARY_PATH: &str = "data";
 const BORROWS_PATH: &str = "data/borrows.txt";
 
 fn main() {
     let args = Cli::parse();
 
-    let mut library = BkTree::deserialize(&read_file(LIBRARY_PATH));
+    let mut library = Library::deserialize(&read_file(LIBRARY_PATH));
     
     let should_save = match args.action {
         LibraryInteraction::Shelve(input) => shelve(input, &mut library),
@@ -53,7 +51,7 @@ fn write_file(path: &str, deserialized_str: String) {
     };
 }
 
-fn shelve(input: ShelveCommand, library: &mut BkTree) -> bool {
+fn shelve(input: ShelveCommand, library: &mut Library) -> bool {
     let isbn = match Isbn::from_str(&input.isbn) {
        Ok(result) => result,
        Err(error) => panic!("Encountered problem converting input to ISBN due to: {:?}", error)
@@ -64,10 +62,10 @@ fn shelve(input: ShelveCommand, library: &mut BkTree) -> bool {
     return true;
 }
 
-fn search(input: SearchCommand, library: &BkTree) -> bool {
+fn search(input: SearchCommand, library: &Library) -> bool {
     let search_result = library.search(input.search_str);
     for r in search_result {
-        match r.data {
+        match r.contents {
             TreeData::BkBook(book) => println!("{} ({})", book.title, r.distance),
             TreeData::BkAuthor(author) => println!("{} ({})", author.name, r.distance)
         };
@@ -75,18 +73,18 @@ fn search(input: SearchCommand, library: &BkTree) -> bool {
     return false;
 }
 
-fn borrow(input: BorrowCommand, library: &mut BkTree) -> bool {
+fn borrow(input: BorrowCommand, library: &mut Library) -> bool {
 
     println!("Borrowed book with ISBN: {}", input.isbn);
     return true;
 }
 
-fn return_(input: ReturnCommand, library: &mut BkTree) -> bool {
+fn return_(input: ReturnCommand, library: &mut Library) -> bool {
     println!("Returned book with ISBN: {}", input.isbn);
     return true;
 }
 
-fn list_borrows(input: ListBorrowsCommand, library: &BkTree) -> bool {
+fn list_borrows(input: ListBorrowsCommand, library: &Library) -> bool {
     let file_str = read_file(BORROWS_PATH);
     let mut file_lines = file_str.lines();
     let users = file_lines.next().unwrap().split(",");
@@ -108,7 +106,7 @@ fn list_borrows(input: ListBorrowsCommand, library: &BkTree) -> bool {
         let (b, path) = l.split_once(";").unzip();
         if b.unwrap() == borrower {
             let tp = TraversalPath::deserialize(&path.unwrap());
-            result.push(library.get_contents(tp));
+            result.push(library.get_indices(tp));
         }
     }
     if result.is_empty() {
