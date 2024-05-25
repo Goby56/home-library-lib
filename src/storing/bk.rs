@@ -20,16 +20,12 @@ pub struct BkNode {
 }
 
 impl BkTree {
-    pub fn init(identifier: String) -> Self {
-        BkTree { root: BkNode::from(identifier), bk_paths: Vec::new() }
-    }
-
-    pub fn from(root: BkNode) -> Self {
+    pub fn init(root: BkNode) -> Self {
         BkTree { root, bk_paths: Vec::new() }
     }
 
-    pub fn add_node(&mut self, identifier: String) {
-        let new_node = BkNode::from(identifier);
+    pub fn add_node(&mut self, identifier: String, book_refs: Vec<u32>) {
+        let new_node = BkNode::create(identifier, book_refs);
         let mut path = TraversalPath::new();
         self.root.add(&mut path, new_node);
         self.bk_paths.push(path);
@@ -85,21 +81,17 @@ impl BkNode {
         return self.children.get_mut(&dist);
     }
 
-    pub fn from(identifier: String) -> Self {
-        BkNode::create(identifier, Vec::new())
-    }
-
-    pub fn create(identifier: String, indices: Vec<u32>) -> Self {
+    pub fn create(identifier: String, book_refs: Vec<u32>) -> Self {
         let (first, id) = identifier.split_at(1);
         match first {
             "@" => BkNode { 
                 identifier: id.to_string(), 
-                data: BkData::Author(indices), 
+                data: BkData::Author(book_refs), 
                 children: HashMap::new() 
             },
             _ => BkNode { 
                 identifier, 
-                data: BkData::Book(indices), 
+                data: BkData::Book(book_refs), 
                 children: HashMap::new() }
         }
 

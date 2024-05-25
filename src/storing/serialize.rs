@@ -1,14 +1,14 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Error, Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use isbn::Isbn;
 
 use super::bk::{BkTree, BkNode, TraversalPath, BkData};
-use super::data::Book;
+use super::data::{Book, Borrows};
 use super::library::Library;
-use super::user::User;
 
 
 pub trait Serializer<T> {
@@ -39,13 +39,15 @@ fn read_file(path: PathBuf) -> Result<String, Error> {
 impl FileSystemSerializer for Library {
     fn serialize(&self, path: PathBuf) -> Result<(), Error> {
         self.search_tree.serialize(path.join("tree.txt"))?;
+        self.books.serialize(path.join("books.txt"))?;
+        self.borrows.serialize(path.join("borrows.txt"))?;
         Ok(())
     }
 
     fn deserialize(path: PathBuf) -> Result<Self, Error> {
-        let search_tree = BkTree::deserialize(path)?;
-        let books = Vec::<Book>::deserialize(path)?;
-        let borrows = Vec::<User>::deserialize(path)?;
+        let search_tree = BkTree::deserialize(path.join("tree.txt"))?;
+        let books = Vec::<Book>::deserialize(path.join("books.txt"))?;
+        let borrows = Borrows::deserialize(path.join("borrows.txt"))?;
         Ok(Library { search_tree, books, borrows })
     }
 }
@@ -74,7 +76,7 @@ impl FileSystemSerializer for BkTree {
             Err(error) => panic!("{}", error)
         };
         // First line doesn't have path
-        let mut tree: BkTree = BkTree::from(BkNode::deserialize(lines.next().unwrap()));
+        let mut tree: BkTree = BkTree::init(BkNode::deserialize(lines.next().unwrap()));
         for line in lines {
             let (path_str, id_and_refs) = line.split_once(";").unzip();
             // Traversal path
@@ -112,12 +114,24 @@ impl FileSystemSerializer for Vec<Book> {
     }
 }
 
-impl FileSystemSerializer for User {
+impl FileSystemSerializer for Borrows {
     fn serialize(&self, path: PathBuf) -> Result<(), Error> {
-        
+        let lines = self.0.iter()
+            .map(|(user, book_refs)| format!("{user};{}", book_refs.serialize()))
+            .collect::<Vec<String>>();
+        write_file(path, lines.join("\n"))
     }
 
     fn deserialize(path: PathBuf) -> Result<Self, Error> where Self: Sized {
+        let borrows = match read_file(path) {
+            Ok(contents) => {
+                contents.lines().map(|l| l.split_once(";").unzip())
+                    .map(|(user, book_refs)| (user.unwrap().to_string(), Vec::<u32>::deserialize(book_refs.unwrap())))
+                    .collect::<HashMap<String, Vec<u32>>>()
+            },
+            Err(error) => panic!("{}", error)
+        };
+        return Ok(Borrows(borrows));
         
     }
 }

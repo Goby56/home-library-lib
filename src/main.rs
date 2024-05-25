@@ -1,7 +1,8 @@
 mod args;
 pub mod storing;
+mod err;
 
-use std::{fs::File, io::{Read, Write}, str::FromStr};
+use std::{str::FromStr, path::PathBuf};
 
 use clap::Parser;
 
@@ -13,15 +14,15 @@ use args::{
 };
 use isbn::Isbn;
 use levenshtein::levenshtein;
-use storing::{bk::{TraversalPath}, data::Book, serialize::Serializer, library::Library};
+use storing::{bk::{TraversalPath}, data::Book, serialize::FileSystemSerializer, library::Library};
 
 const LIBRARY_PATH: &str = "data";
-const BORROWS_PATH: &str = "data/borrows.txt";
 
 fn main() {
     let args = Cli::parse();
+    let path_to_library = PathBuf::from_str(LIBRARY_PATH).unwrap();
 
-    let mut library = Library::deserialize(&read_file(LIBRARY_PATH));
+    let mut library = Library::deserialize(path_to_library.clone()).unwrap();
     
     let should_save = match args.action {
         LibraryInteraction::Shelve(input) => shelve(input, &mut library),
@@ -32,23 +33,8 @@ fn main() {
     };
 
     if should_save {
-        write_file(LIBRARY_PATH, library.serialize());
+        library.serialize(path_to_library.clone());
     }
-}
-
-fn read_file(path: &str) -> String { 
-    let mut file = File::open(path).unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-    return contents;
-}
-
-fn write_file(path: &str, deserialized_str: String) {
-    let mut file = File::create(path).unwrap();
-    match file.write_all(deserialized_str.as_bytes()) {
-       Ok(_) => (),
-       Err(error) => panic!("Could not save to disk: {}", error)
-    };
 }
 
 fn shelve(input: ShelveCommand, library: &mut Library) -> bool {

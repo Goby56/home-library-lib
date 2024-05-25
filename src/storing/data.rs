@@ -1,4 +1,4 @@
-use std::{str::FromStr, fmt::Display};
+use std::{str::FromStr, fmt::Display, collections::HashMap};
 
 use isbn::Isbn;
 
@@ -10,6 +10,8 @@ pub struct Book {
     pub isbn: Isbn,
     pub borrower: Option<String>
 }
+
+pub struct Borrows(pub HashMap<String, Vec<u32>>);
 
 impl Book {
     pub fn borrower_as_str(b: Option<String>) -> String {
