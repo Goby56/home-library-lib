@@ -13,8 +13,7 @@ use args::{
     ListBorrowsCommand
 };
 use isbn::Isbn;
-use levenshtein::levenshtein;
-use storing::{bk::{TraversalPath}, data::Book, serialize::FileSystemSerializer, library::Library};
+use storing::{data::Book, serialize::FileSystemSerializer, library::Library};
 
 const LIBRARY_PATH: &str = "data";
 
@@ -33,7 +32,10 @@ fn main() {
     };
 
     if should_save {
-        library.serialize(path_to_library.clone());
+        match library.serialize(path_to_library.clone()) {
+            Ok(()) => {},
+            Err(error) => panic!("{error}")
+        }
     }
 }
 
@@ -44,24 +46,27 @@ fn shelve(input: ShelveCommand, library: &mut Library) -> bool {
     };
     let book = Book { title: input.title, author: input.author, pub_date: input.publish_date, isbn, borrower: None }; 
     println!("Adding book: {}", book.title);
-    library.add_node(TreeData::BkBook(book));
+    library.try_add_book(book);
     return true;
 }
 
 fn search(input: SearchCommand, library: &Library) -> bool {
-    let search_result = library.search(input.search_str);
-    for r in search_result {
-        match r.contents {
-            TreeData::BkBook(book) => println!("{} ({})", book.title, r.distance),
-            TreeData::BkAuthor(author) => println!("{} ({})", author.name, r.distance)
-        };
+    let books = library.search(&input.search_str, "TODO IMPL YEAR EXPR");
+    for b in books {
+        println!("{b}");
     }
     return false;
+
 }
 
 fn borrow(input: BorrowCommand, library: &mut Library) -> bool {
+    match library.borrow(input.borrower, Isbn::from_str(&input.isbn).unwrap()) {
+        Ok(book) => println!("{} is now borrowed by {}\n", book.title, book.borrower.unwrap()),
+        Err(error) => panic!("{error}")
+    }
 
     println!("Borrowed book with ISBN: {}", input.isbn);
+
     return true;
 }
 
@@ -71,42 +76,11 @@ fn return_(input: ReturnCommand, library: &mut Library) -> bool {
 }
 
 fn list_borrows(input: ListBorrowsCommand, library: &Library) -> bool {
-    let file_str = read_file(BORROWS_PATH);
-    let mut file_lines = file_str.lines();
-    let users = file_lines.next().unwrap().split(",");
-    let mut borrower = &*input.borrower.to_lowercase();
-    let mut shortest_dist = 10;
-    for u in users {
-        let dist = levenshtein(&input.borrower.to_lowercase(), u);
-        if  dist < shortest_dist {
-            shortest_dist = dist;
-            borrower = u;
+    if let Ok(books) = library.list_borrows(&input.borrower) {
+        for b in books {
+            println!("{}", b);
         }
     }
-    if borrower == input.borrower {
-        println!("Could not find user: {}", input.borrower);
-        return false;
-    }
-    let mut result: Vec<&TreeData> = Vec::new();
-    for l in file_lines {
-        let (b, path) = l.split_once(";").unzip();
-        if b.unwrap() == borrower {
-            let tp = TraversalPath::deserialize(&path.unwrap());
-            result.push(library.get_indices(tp));
-        }
-    }
-    if result.is_empty() {
-        println!("{} has not borrowed any books", borrower);
-        return false;
-    }
-    println!("{} has borrowed the following book(s)", borrower);
-    for r in result {
-        match r {
-            TreeData::BkBook(book) => println!("{}", book.title),
-            TreeData::BkAuthor(author) => println!("{}", author.name)
-        };
-    }
-
     return false;
 }
 

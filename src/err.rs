@@ -17,3 +17,20 @@ impl fmt::Display for BookBorrowingError {
         }
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct ListBorrowsError {
+    pub input_borrower: String,
+    pub found_borrower: Option<String>
+}
+
+impl Error for ListBorrowsError {}
+
+impl fmt::Display for ListBorrowsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.found_borrower {
+            Some(borrower) => write!(f, "{} not found. Did you mean {borrower}?", self.input_borrower),
+            None => write!(f, "Could not find user {}", self.input_borrower)
+        }
+    }
+}

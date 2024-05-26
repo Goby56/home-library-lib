@@ -11,16 +11,19 @@ use super::data::{Book, Borrows};
 use super::library::Library;
 
 
-pub trait Serializer<T> {
+pub trait Serializer {
     fn serialize(&self) -> String;
-
     fn deserialize(ser_str: &str) -> Self;
 }
 
 pub trait FileSystemSerializer {
     fn serialize(&self, path: PathBuf) -> Result<(), Error>;
-
     fn deserialize(path: PathBuf) -> Result<Self, Error> where Self: Sized;
+}
+
+pub trait VecSerializer<T> {
+    fn serialize(&self) -> String;
+    fn deserialize(ser_vec: &str) -> Self;
 }
 
 fn write_file(path: PathBuf, contents: String) -> Result<(), Error> {
@@ -56,14 +59,14 @@ impl FileSystemSerializer for BkTree {
     fn serialize(&self, path: PathBuf) -> Result<(), Error> {
         let mut deserialized_nodes: Vec<String> = Vec::new();
         
-        deserialized_nodes.push(format!("{}", self.root.data.serialize()));
+        deserialized_nodes.push(format!("{}", BkData::serialize(&self.root.data)));
         for traversal in &self.bk_paths {
             let mut curr_node = &self.root;
             for key in traversal.iter() {
                 curr_node = curr_node.children.get(&key).unwrap();
             }
             
-            let line = format!("{};{}", traversal.serialize(), curr_node.serialize());
+            let line = format!("{};{}", traversal.0.serialize(), curr_node.serialize());
             deserialized_nodes.push(line);
         }
 
@@ -71,16 +74,14 @@ impl FileSystemSerializer for BkTree {
     }
 
     fn deserialize(path: PathBuf) -> Result<Self, Error> {
-        let mut lines = match read_file(path) {
-            Ok(contents) => contents.lines(),
-            Err(error) => panic!("{}", error)
-        };
+        let contents = read_file(path)?;
+        let mut lines = contents.lines();
         // First line doesn't have path
         let mut tree: BkTree = BkTree::init(BkNode::deserialize(lines.next().unwrap()));
         for line in lines {
             let (path_str, id_and_refs) = line.split_once(";").unzip();
             // Traversal path
-            let tp = TraversalPath::deserialize(path_str.unwrap());
+            let tp = TraversalPath(Vec::<u16>::deserialize(path_str.unwrap()));
             let node = BkNode::deserialize(id_and_refs.unwrap());
             let mut curr_node = &mut tree.root;
             for dist in tp.all_but_last() {
@@ -105,11 +106,8 @@ impl FileSystemSerializer for Vec<Book> {
     }
 
     fn deserialize(path: PathBuf) -> Result<Self, Error> {
-        let mut lines = match read_file(path) {
-            Ok(contents) => contents.lines(),
-            Err(error) => panic!("{}", error)
-        };
-        let books = lines.map(|line| Book::deserialize(line)).collect();
+        let contents = read_file(path)?;
+        let books = contents.lines().map(|line| Book::deserialize(line)).collect();
         Ok(books)
     }
 }
@@ -136,20 +134,10 @@ impl FileSystemSerializer for Borrows {
     }
 }
 
-impl <T> Serializer<T> for TraversalPath {
-    fn serialize(&self) -> String {
-        self.0.serialize()
-    }
-
-    fn deserialize(ser_path: &str) -> Self {
-        TraversalPath(Vec::<u16>::deserialize(ser_path))
-    }
-}
-
-impl <T> Serializer<T> for BkNode {
+impl Serializer for BkNode {
     fn serialize(&self) -> String {
         let id = match self.data {
-            BkData::Book(_) => self.identifier,
+            BkData::Book(_) => self.identifier.clone(),
             BkData::Author(_) => format!("@{}", self.identifier)
         };
         format!("{};{}", id, self.data.serialize())
@@ -161,7 +149,7 @@ impl <T> Serializer<T> for BkNode {
     }
 }
 
-impl <T> Serializer<T> for BkData {
+impl Serializer for BkData {
     fn serialize(&self) -> String {
        match self {
            BkData::Book(book_ref) => book_ref.serialize(),
@@ -174,7 +162,7 @@ impl <T> Serializer<T> for BkData {
     }
 }
 
-impl <T> Serializer<T> for Book {
+impl Serializer for Book {
     fn serialize(&self) -> String {
         format!(
             "{},{},{},{},{}", self.title, self.author, self.pub_date, 
@@ -191,7 +179,7 @@ impl <T> Serializer<T> for Book {
     }
 }
 
-impl <T: ToString + FromStr> Serializer<T> for Vec<T> {
+impl <T: ToString + FromStr> VecSerializer<T> for Vec<T> {
     fn serialize(&self) -> String {
         self.iter()
             .map(|x| x.to_string())

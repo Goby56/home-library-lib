@@ -13,6 +13,21 @@ pub enum BkData {
     Author(Vec<u32>)
 }
 
+impl BkData {
+    pub fn add_refs(&mut self, mut book_ref: Vec<u32>) {
+        match self {
+            BkData::Book(d) | BkData::Author(d) => d.append(&mut book_ref)
+        };
+    }
+
+    pub fn get_refs(&self) -> Vec<u32> {
+        match self {
+            BkData::Book(d) | BkData::Author(d) => d.to_vec()
+        }
+    
+    }
+}
+
 pub struct BkNode {
     pub identifier: String,
     pub data: BkData,
@@ -27,18 +42,19 @@ impl BkTree {
     pub fn add_node(&mut self, identifier: String, book_refs: Vec<u32>) {
         let new_node = BkNode::create(identifier, book_refs);
         let mut path = TraversalPath::new();
-        self.root.add(&mut path, new_node);
-        self.bk_paths.push(path);
+        let node_added = self.root.add(&mut path, new_node);
+        if node_added { self.bk_paths.push(path) }
+        
     }
 
-    pub fn search(&self, query: String) -> Vec<SearchResult> {
+    pub fn search(&self, query: &str) -> Vec<SearchResult> {
         let mut result: Vec<SearchResult> = Vec::new();
         let tolerance = (query.len() as f32 * 0.7).floor().max(1.0) as u16;
         self.root.search(&query.to_lowercase(), tolerance, &mut result);
         return result;
     }
     
-    pub fn get_indices(&self, path: TraversalPath) -> &BkData {
+    pub fn get_references(&self, path: TraversalPath) -> &BkData {
         let mut node = &self.root;
         for dist in path.iter() {
             node = node.children.get(dist).unwrap();
@@ -48,15 +64,20 @@ impl BkTree {
 }
 
 impl BkNode {
-    fn add(&mut self, path: &mut TraversalPath, new_node: BkNode) {
+    fn add(&mut self, path: &mut TraversalPath, new_node: BkNode) -> bool {
         let dist = self.distance_to(&new_node.identifier);
+        if dist == 0 {
+            self.data.add_refs(new_node.data.get_refs());
+            return false;
+        }
         path.append(dist);
         match self.child_at(dist) {
-            Some(node) => node.add(path, new_node),
+            Some(node) => return node.add(path, new_node),
             None => {
                 self.children.insert(dist, new_node);
+                return true;
             }
-        }
+        };
     }
 
     fn search(&self, query: &str, tolerance: u16, result: &mut Vec<SearchResult>) {
