@@ -59,7 +59,7 @@ impl FileSystemSerializer for BkTree {
     fn serialize(&self, path: PathBuf) -> Result<(), Error> {
         let mut deserialized_nodes: Vec<String> = Vec::new();
         
-        deserialized_nodes.push(format!("{}", BkData::serialize(&self.root.data)));
+        deserialized_nodes.push(format!("{}", self.root.serialize()));
         for traversal in &self.bk_paths {
             let mut curr_node = &self.root;
             for key in traversal.iter() {
@@ -165,7 +165,7 @@ impl Serializer for BkData {
 impl Serializer for Book {
     fn serialize(&self) -> String {
         format!(
-            "{},{},{},{},{}", self.title, self.author, self.pub_date, 
+            "{},{},{},{},{}\n", self.title, self.author, self.pub_date, 
             self.isbn.to_string(), Book::borrower_as_str(self.borrower.clone())
             )
     }

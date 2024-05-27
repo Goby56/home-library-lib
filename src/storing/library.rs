@@ -17,16 +17,16 @@ pub struct Library {
 impl Library {
     pub fn try_add_book(&mut self, book: Book) {
         self.books.push(book.clone());
-        let index = self.books.len() as u32;
+        let index = (self.books.len() - 1) as u32;
         self.search_tree.add_node(book.title, vec![index]);
-        self.search_tree.add_node(book.author, vec![index]);
+        self.search_tree.add_node(format!("@{}", book.author), vec![index]);
     } 
 
     pub fn search(&self, query: &str, _year_expr: &str) -> Vec<&Book> {
-        match Isbn::from_str(query) {
-            Ok(isbn) => return self.flat_search(isbn),
-            _ => {} 
-        };
+        //match Isbn::from_str(query) {
+        //    Ok(isbn) => return self.flat_search(isbn),
+        //    _ => {} 
+        //};
         let mut books = Vec::new();
         for result in self.search_tree.search(query) {
             for book_ref in result.contents.get_refs() {

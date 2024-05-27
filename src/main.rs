@@ -52,6 +52,9 @@ fn shelve(input: ShelveCommand, library: &mut Library) -> bool {
 
 fn search(input: SearchCommand, library: &Library) -> bool {
     let books = library.search(&input.search_str, "TODO IMPL YEAR EXPR");
+    if books.is_empty() {
+        println!("Found no books");
+    }
     for b in books {
         println!("{b}");
     }
