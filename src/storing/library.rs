@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use isbn::Isbn;
 use levenshtein::levenshtein;
 
@@ -39,49 +37,58 @@ impl Library {
         return books;
     }
 
-    pub fn borrow(&mut self, borrower: String, isbn: Isbn) -> Result<Book, BookBorrowingError> {
-        for i in 0..(self.books.len() - 1) {
+    pub fn modify_borrow(&mut self, user: Option<String>, isbn: Isbn) -> Result<Book, BookBorrowingError> {
+        for i in 0..(self.books.len()) {
             let book = &self.books[i];
             if book.isbn != isbn {
                 continue;
             }
-            match book.borrower.clone() {
-                Some(b) => return Err(BookBorrowingError { 
-                    book_title: Some(book.title.clone()), 
-                    borrower: Some(b), 
-                    isbn_search: isbn.to_string() 
-                }),
-                None => {
-                    self.books[i].borrower = Some(borrower.clone());
-                    return Ok(self.books[i].clone());
+            match &user {
+                Some(new_owner) => match &book.borrower {
+                    Some(curr_owner) => return Err(BookBorrowingError { 
+                        book_title: Some(book.title.clone()), 
+                        borrower: Some(curr_owner.to_string()), 
+                        isbn_search: isbn.to_string() 
+                    }),
+                    None => self.borrows.add_ref(new_owner.to_string(), i as u32)
+                },
+                None => match &book.borrower {
+                    Some(curr_owner) => self.borrows.del_ref(curr_owner.to_string(), i as u32),
+                    None => return Err(BookBorrowingError { 
+                        book_title: Some(book.title.clone()), 
+                        borrower: None, 
+                        isbn_search: isbn.to_string() 
+                    })
                 }
-            };
+            }
+            self.books[i].borrower = user.clone();
+            return Ok(self.books[i].clone())
         }
         Err(BookBorrowingError { book_title: None, borrower: None, isbn_search: isbn.to_string() })
     }
 
     pub fn list_borrows(&self, borrower: &str) -> Result<Vec<Book>, ListBorrowsError> {
-        let input_b = &borrower.to_lowercase();
-        let mut best_b = "";
+        let lc_input = &borrower.to_lowercase();
+        let mut best_match = "";
         let mut shortest_dist = 10;
-        for u in self.borrows.0.keys() {
-            let dist = levenshtein(input_b, &u.to_lowercase());
+        for user in self.borrows.0.keys() {
+            let dist = levenshtein(lc_input, &user.to_lowercase());
             if dist < shortest_dist {
                 shortest_dist = dist;
-                best_b = u;
+                best_match = user;
             }
         }
-        if best_b == input_b {
-            return Ok(self.get_books(self.borrows.0.get(input_b)));
+        if &best_match.to_lowercase() == lc_input {
+            return Ok(self.get_books(self.borrows.0.get(best_match)));
         }
-        match best_b {
+        match best_match {
             "" => return Err(ListBorrowsError { 
-                input_borrower: input_b.to_string(), 
+                input_borrower: borrower.to_string(), 
                 found_borrower: None
             }),
             _ => return Err(ListBorrowsError { 
-                input_borrower: input_b.to_string(), 
-                found_borrower: Some(best_b.to_string())
+                input_borrower: borrower.to_string(), 
+                found_borrower: Some(best_match.to_string())
             })
         };
     }
@@ -100,7 +107,7 @@ impl Library {
     }
 
 
-    fn flat_search(&self, isbn: Isbn) -> Vec<&Book> {
-        todo!();
-    }
+    // fn flat_search(&self, isbn: Isbn) -> Vec<&Book> {
+    //     todo!();
+    // }
 }

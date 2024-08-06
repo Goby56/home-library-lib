@@ -19,7 +19,7 @@ pub enum LibraryInteraction {
     /// Return a book that you have borrowed
     Return(ReturnCommand),
     /// See which books you have borrowed
-    ListBorrows(ListBorrowsCommand)
+    ListBorrows(ListBorrowsCommand),
 }
 
 #[derive(Debug, Args)]

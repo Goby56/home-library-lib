@@ -184,6 +184,7 @@ impl <T: ToString + FromStr> VecSerializer<T> for Vec<T> {
         self.iter()
             .map(|x| x.to_string())
             .reduce(|mut tot, s| {
+                tot.push(',');
                 tot.push_str(&s);
                 return tot;
             }).unwrap()

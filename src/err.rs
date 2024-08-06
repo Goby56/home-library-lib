@@ -12,7 +12,10 @@ impl Error for BookBorrowingError {}
 impl fmt::Display for BookBorrowingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.book_title {
-            Some(title) => write!(f, "{} already borrowed by {}", title, self.borrower.clone().unwrap()),
+            Some(title) => match &self.borrower {
+                Some(borrower) => write!(f, "{} is already borrowed by {}", title, borrower),
+                None => write!(f, "{} is not borrowed by anyone", title)
+            }
             None => write!(f, "Book with ISBN {} not found ", self.isbn_search)
         }
     }

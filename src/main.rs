@@ -28,7 +28,7 @@ fn main() {
         LibraryInteraction::Search(input) => search(input, &library),
         LibraryInteraction::Borrow(input) => borrow(input, &mut library),
         LibraryInteraction::Return(input) => return_(input, &mut library),
-        LibraryInteraction::ListBorrows(input) => list_borrows(input, &library)
+        LibraryInteraction::ListBorrows(input) => list_borrows(input, &library),
     };
 
     if should_save {
@@ -63,28 +63,32 @@ fn search(input: SearchCommand, library: &Library) -> bool {
 }
 
 fn borrow(input: BorrowCommand, library: &mut Library) -> bool {
-    match library.borrow(input.borrower, Isbn::from_str(&input.isbn).unwrap()) {
-        Ok(book) => println!("{} is now borrowed by {}\n", book.title, book.borrower.unwrap()),
-        Err(error) => panic!("{error}")
+    match library.modify_borrow(Some(input.borrower), Isbn::from_str(&input.isbn).unwrap()) {
+        Ok(book) => println!("{} with ISBN {} is now borrowed by {}\n", book.title, input.isbn, book.borrower.unwrap()),
+        Err(error) => {
+            println!("Cannot borrow book!\n{error}");
+            return false;
+        }
     }
-
-    println!("Borrowed book with ISBN: {}", input.isbn);
 
     return true;
 }
 
 fn return_(input: ReturnCommand, library: &mut Library) -> bool {
-    println!("Returned book with ISBN: {}", input.isbn);
+    match library.modify_borrow(None, Isbn::from_str(&input.isbn).unwrap()) {
+        Ok(book) => println!("{} with ISBN {} has now been returned\n", book.title, input.isbn),
+        Err(error) => {
+            println!("Cannot return book!\n{error}");
+            return false;
+        }
+    }
     return true;
 }
 
 fn list_borrows(input: ListBorrowsCommand, library: &Library) -> bool {
-    if let Ok(books) = library.list_borrows(&input.borrower) {
-        for b in books {
-            println!("{}", b);
-        }
+    match library.list_borrows(&input.borrower) {
+        Ok(books) => books.iter().enumerate().for_each(|(i, b)| println!("{}: {b}", i+1)),
+        Err(error) => println!("{error}")
     }
     return false;
 }
-
-
