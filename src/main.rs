@@ -40,18 +40,20 @@ fn main() {
 }
 
 fn shelve(input: ShelveCommand, library: &mut Library) -> bool {
-    let isbn = match Isbn::from_str(&input.isbn) {
-       Ok(result) => result,
-       Err(error) => panic!("Encountered problem converting input to ISBN due to: {:?}", error)
-    };
-    let book = Book { title: input.title, author: input.author, pub_date: input.publish_date, isbn, borrower: None }; 
+    let book = Book { 
+        title: input.title, 
+        author: input.author, 
+        pub_date: input.publish_date, 
+        isbn: parse_isbn(&input.isbn), 
+        borrower: None 
+    }; 
     println!("Adding book: {}", book.title);
     library.try_add_book(book);
     return true;
 }
 
 fn search(input: SearchCommand, library: &Library) -> bool {
-    let books = library.search(&input.search_str, "TODO IMPL YEAR EXPR");
+    let books = library.search(&input.search_str, input.limit.to_owned(), input.year_expr);
     if books.is_empty() {
         println!("Found no books");
     }
@@ -63,7 +65,7 @@ fn search(input: SearchCommand, library: &Library) -> bool {
 }
 
 fn borrow(input: BorrowCommand, library: &mut Library) -> bool {
-    match library.modify_borrow(Some(input.borrower), Isbn::from_str(&input.isbn).unwrap()) {
+    match library.modify_borrow(Some(input.borrower), parse_isbn(&input.isbn)) {
         Ok(book) => println!("{} with ISBN {} is now borrowed by {}\n", book.title, input.isbn, book.borrower.unwrap()),
         Err(error) => {
             println!("Cannot borrow book!\n{error}");
@@ -75,7 +77,7 @@ fn borrow(input: BorrowCommand, library: &mut Library) -> bool {
 }
 
 fn return_(input: ReturnCommand, library: &mut Library) -> bool {
-    match library.modify_borrow(None, Isbn::from_str(&input.isbn).unwrap()) {
+    match library.modify_borrow(None, parse_isbn(&input.isbn)) {
         Ok(book) => println!("{} with ISBN {} has now been returned\n", book.title, input.isbn),
         Err(error) => {
             println!("Cannot return book!\n{error}");
@@ -91,4 +93,11 @@ fn list_borrows(input: ListBorrowsCommand, library: &Library) -> bool {
         Err(error) => println!("{error}")
     }
     return false;
+}
+
+fn parse_isbn(isbn: &str) -> Isbn {
+    return match Isbn::from_str(isbn) {
+       Ok(result) => result,
+       Err(error) => panic!("Encountered problem converting input to ISBN due to: {:?}", error)
+    };
 }

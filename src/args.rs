@@ -23,7 +23,7 @@ pub enum LibraryInteraction {
 }
 
 #[derive(Debug, Args)]
-pub struct  ShelveCommand {
+pub struct ShelveCommand {
     /// Book title
     pub title: String,
     /// Book author
@@ -40,7 +40,7 @@ pub struct SearchCommand {
     pub search_str: String,
     /// The maximum number of results
     #[arg(short, long)]
-    pub limit: Option<u16>,
+    pub limit: Option<usize>,
     /// Provide the year the books should be published. Can be an inequality expression such as
     /// '>=1990' (only books published after 1990)
     #[arg(short, long)]

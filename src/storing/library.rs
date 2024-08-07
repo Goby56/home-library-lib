@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use isbn::Isbn;
 use levenshtein::levenshtein;
 
@@ -20,11 +22,7 @@ impl Library {
         self.search_tree.add_node(format!("@{}", book.author), vec![index]);
     } 
 
-    pub fn search(&self, query: &str, _year_expr: &str) -> Vec<&Book> {
-        //match Isbn::from_str(query) {
-        //    Ok(isbn) => return self.flat_search(isbn),
-        //    _ => {} 
-        //};
+    pub fn search(&self, query: &str, limit: Option<usize>, _year_expr: Option<String>) -> Vec<&Book> {
         let mut books = Vec::new();
         for result in self.search_tree.search(query) {
             for book_ref in result.contents.get_refs() {
@@ -34,6 +32,17 @@ impl Library {
                 }
             }
         }
+        if let Ok(isbn) = Isbn::from_str(query) {
+            for b in &self.books {
+                if b.isbn == isbn {
+                    books.push(&b);
+                }
+            }
+        }
+
+        if let Some(n) = limit {
+            if n < books.len() { return books[..n].to_vec(); }
+        };
         return books;
     }
 
