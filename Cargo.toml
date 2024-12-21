@@ -9,3 +9,4 @@ edition = "2021"
 isbn = "0.2.0"
 clap = { version = "4.0", features = ["derive"] }
 levenshtein = "1.0.5"
+regex = "1.11.1"

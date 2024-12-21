@@ -1,5 +1,6 @@
 mod args;
 pub mod storing;
+pub mod searching;
 mod err;
 
 use std::{str::FromStr, path::PathBuf};
@@ -56,12 +57,12 @@ fn search(input: SearchCommand, library: &Library) -> bool {
     let books = library.search(&input.search_str, input.limit.to_owned(), input.year_expr);
     if books.is_empty() {
         println!("Found no books");
-    }
-    for b in books {
-        println!("{b}");
+    } else {
+        for b in books {
+            println!("{}", b.title)
+        }
     }
     return false;
-
 }
 
 fn borrow(input: BorrowCommand, library: &mut Library) -> bool {

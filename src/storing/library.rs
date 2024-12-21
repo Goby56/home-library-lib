@@ -4,6 +4,7 @@ use isbn::Isbn;
 use levenshtein::levenshtein;
 
 use crate::err::{BookBorrowingError, ListBorrowsError};
+use crate::searching::comparator::Comparison;
 
 use super::bk::BkTree;
 use super::data::{Book, Borrows};
@@ -22,7 +23,7 @@ impl Library {
         self.search_tree.add_node(format!("@{}", book.author), vec![index]);
     } 
 
-    pub fn search(&self, query: &str, limit: Option<usize>, _year_expr: Option<String>) -> Vec<&Book> {
+    pub fn search(&self, query: &str, _limit: Option<usize>, year_expr: Option<String>) -> Vec<&Book>  {
         let mut books = Vec::new();
         for result in self.search_tree.search(query) {
             for book_ref in result.contents.get_refs() {
@@ -39,11 +40,14 @@ impl Library {
                 }
             }
         }
-
-        if let Some(n) = limit {
-            if n < books.len() { return books[..n].to_vec(); }
-        };
+        let comp = Comparison::new(">=", 1990).unwrap().compare(query.parse::<i32>().unwrap());
+        println!("{comp}");
+        // let req = VersionReq::parse(&year_expr.unwrap_or("".to_string()))?;
         return books;
+        // return Ok(books.into_iter()
+        //     .filter(|b| req.matches(
+        //             &Version::parse(&b.pub_date.to_string()).unwrap()))
+        //     .collect());
     }
 
     pub fn modify_borrow(&mut self, user: Option<String>, isbn: Isbn) -> Result<Book, BookBorrowingError> {
