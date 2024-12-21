@@ -23,31 +23,48 @@ impl Library {
         self.search_tree.add_node(format!("@{}", book.author), vec![index]);
     } 
 
-    pub fn search(&self, query: &str, _limit: Option<usize>, year_expr: Option<String>) -> Vec<&Book>  {
-        let mut books = Vec::new();
+    pub fn search(&self, query: &str, limit: Option<usize>, year_expr: Option<String>) -> Vec<&Book>  {
+        let mut book_results: Vec<(&Book, u16)> = Vec::new();
+        // if let Ok(isbn) = Isbn::from_str(query) {
+        //     book_results.extend(self.isbn_search(isbn));
+        // }
+        book_results.extend(self.bk_search(query));
+        if let Some(year_comp) = year_expr {
+            let comparisons = Comparison::from_string(&year_comp);
+            for i in (0..book_results.len()).rev() {
+                if comparisons.iter().any(|comp| !comp.compare(book_results[i].0.pub_date as i32)) {
+                    book_results.swap_remove(i);
+                }
+            }  
+        }
+        book_results.sort_by(|a, b| a.1.cmp(&b.1));
+        if let Some(l) = limit {
+            book_results = book_results[..l].to_vec();
+        } 
+        return book_results.iter().map(|e| e.0).collect();
+    }
+
+    fn isbn_search(&self, isbn: Isbn) -> Vec<(&Book, u16)> {
+        let mut books = vec![];
+        for b in &self.books {
+            if b.isbn == isbn {
+                books.push((b, 0));
+            }
+        }
+        return books;
+    }
+
+    fn bk_search(&self, query: &str) -> Vec<(&Book, u16)> {
+        let mut books_and_distance = vec![];
         for result in self.search_tree.search(query) {
             for book_ref in result.contents.get_refs() {
                 let b = self.books.get(book_ref as usize);
                 if let Some(b) = b {
-                    books.push(b);
+                    books_and_distance.push((b, result.distance));
                 }
             }
         }
-        if let Ok(isbn) = Isbn::from_str(query) {
-            for b in &self.books {
-                if b.isbn == isbn {
-                    books.push(&b);
-                }
-            }
-        }
-        let comp = Comparison::new(">=", 1990).unwrap().compare(query.parse::<i32>().unwrap());
-        println!("{comp}");
-        // let req = VersionReq::parse(&year_expr.unwrap_or("".to_string()))?;
-        return books;
-        // return Ok(books.into_iter()
-        //     .filter(|b| req.matches(
-        //             &Version::parse(&b.pub_date.to_string()).unwrap()))
-        //     .collect());
+        return books_and_distance;
     }
 
     pub fn modify_borrow(&mut self, user: Option<String>, isbn: Isbn) -> Result<Book, BookBorrowingError> {

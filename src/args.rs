@@ -42,7 +42,7 @@ pub struct SearchCommand {
     #[arg(short, long)]
     pub limit: Option<usize>,
     /// Provide the year the books should be published. Can be an inequality expression such as
-    /// '>=1990' (only books published after 1990)
+    /// '>=1990' (only books published 1990 and after)
     #[arg(short, long)]
     pub year_expr: Option<String>
 

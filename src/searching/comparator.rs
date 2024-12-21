@@ -23,7 +23,7 @@ impl Comparison {
     }
 
     pub fn from_string(string: &str) -> Vec<Comparison> {
-        let re = Regex::new(r"^([><!=]{1}|>=|<=)(\d+)$").unwrap();
+        let re = Regex::new(r"([><!=]{1}|>=|<=)(\d+)").unwrap();
         let mut comparisons = vec![];
         for (_, [comp, num]) in re.captures_iter(string).map(|c| c.extract()) {
             if let Ok(n) = num.parse::<i32>() {
@@ -31,8 +31,7 @@ impl Comparison {
                     comparisons.push(comparison);
                 }
             }
-
-        };
+        }
         return comparisons;
     }
 

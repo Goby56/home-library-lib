@@ -49,7 +49,7 @@ impl BkTree {
 
     pub fn search(&self, query: &str) -> Vec<SearchResult> {
         let mut result: Vec<SearchResult> = Vec::new();
-        let tolerance = (query.len() as f32).powf(0.5).max(1.0) as u16;
+        let tolerance = BkTree::per_query_tolerance(query);
         self.root.search(&query.to_lowercase(), tolerance, &mut result);
         return result;
     }
@@ -60,6 +60,10 @@ impl BkTree {
             node = node.children.get(dist).unwrap();
         }
         return &node.data;
+    }
+
+    fn per_query_tolerance(query: &str) -> u16 {
+        (query.len() as f32).powf(0.5).max(1.0) as u16
     }
 }
 
