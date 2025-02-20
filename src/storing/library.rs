@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use isbn::Isbn;
 use levenshtein::levenshtein;
 
@@ -7,20 +5,23 @@ use crate::err::{BookBorrowingError, ListBorrowsError};
 use crate::searching::comparator::Comparison;
 
 use super::bk::BkTree;
-use super::data::{Book, Borrows};
+use super::data::Book;
 
 pub struct Library {
-    pub search_tree: BkTree,
-    pub books: Vec<Book>,
-    pub borrows: Borrows
+    pub bk_tree: Option<BkTree>,
+    pub books: Vec<Book>
 }
 
-impl Library {
+impl Library { 
+    pub fn from(books: Vec<Book>) -> Library {
+        Library { bk_tree: None, books }
+    }
+
     pub fn try_add_book(&mut self, book: Book) {
         self.books.push(book.clone());
         let index = (self.books.len() - 1) as u32;
-        self.search_tree.add_node(book.title, vec![index]);
-        self.search_tree.add_node(format!("@{}", book.author), vec![index]);
+        self.bk_tree.add_node(book.title, vec![index]);
+        self.bk_tree.add_node(format!("@{}", book.author), vec![index]);
     } 
 
     pub fn search(&self, query: &str, limit: Option<usize>, year_expr: Option<String>) -> Vec<&Book>  {
@@ -56,7 +57,7 @@ impl Library {
 
     fn bk_search(&self, query: &str) -> Vec<(&Book, u16)> {
         let mut books_and_distance = vec![];
-        for result in self.search_tree.search(query) {
+        for result in self.bk_tree.search(query) {
             for book_ref in result.contents.get_refs() {
                 let b = self.books.get(book_ref as usize);
                 if let Some(b) = b {

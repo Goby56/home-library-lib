@@ -1,50 +1,39 @@
-use std::{str::FromStr, fmt::Display, collections::HashMap};
+use std::{str::FromStr, fmt::Display};
 
 use isbn::Isbn;
+use uuid::Uuid;
 
-#[derive(Debug)]
+use crate::args::ShelveCommand;
+
+#[derive(Debug, Clone)]
 pub struct Book {
+    pub uuid: Uuid,
+    pub shelf: String,
     pub title: String,
     pub author: String,
     pub pub_date: u16,
-    pub isbn: Isbn,
-    pub borrower: Option<String>
+    pub metadata: Option<BookMetadata>,
+    pub borrower: Option<String>,
+    pub borrow_date: Option<String>
 }
-
-pub struct Borrows(pub HashMap<String, Vec<u32>>);
 
 impl Book {
-    pub fn borrower_as_str(b: Option<String>) -> String {
-        match b {
-            Some(borrower) => borrower,
-            None => String::from("")
-        }
+    pub fn from(input: ShelveCommand) {
+        let metadata = None;
+        if let Ok(isbn) = Isbn::from_str(&input.isbn) {
+            // Fetch metadata
+        };
+        let book = Book { 
+            uuid: Uuid::new_v4(),
+            shelf: input.shelf,
+            title: input.title, 
+            author: input.author, 
+            pub_date: input.publish_date, 
+            metadata, 
+            borrower: None,
+            borrow_date: None
+        }; 
     }
-
-    pub fn borrower_as_opt(b: &str) -> Option<String> {
-        match b {
-            "" => None,
-            _ => Some(b.to_string())
-        }
-    }
-}
-
-impl Borrows {
-    pub fn add_ref(&mut self, user: String, book_ref: u32) {
-        match self.0.get_mut(&user) {
-            Some(books) => books.push(book_ref),
-            None => { self.0.insert(user.clone(), vec![book_ref]); }
-        }
-    }
-
-    pub fn del_ref(&mut self, user: String, book_ref: u32) {
-        if let Some(refs) = self.0.get_mut(&user) {
-            if let Some(i) = refs.iter().position(|&r| r == book_ref) {
-                refs.swap_remove(i);
-            }
-        }
-    }
-
 }
 
 impl Display for Book {
@@ -53,14 +42,22 @@ impl Display for Book {
     }
 }
 
-impl Clone for Book {
+#[derive(Debug)]
+pub struct BookMetadata {
+    pub isbn: Isbn,
+    pub genre: Option<String>,
+    pub pages: Option<u16>,
+    pub language: Option<String>
+}
+
+impl Clone for BookMetadata {
     fn clone(&self) -> Self {
-        return Book { 
-            title: self.title.clone(), 
-            author: self.author.clone(),  
-            pub_date: self.pub_date.clone(), 
+        return BookMetadata {
             isbn: Isbn::from_str(&self.isbn.to_string()).unwrap(),
-            borrower: self.borrower.clone()
-        };
+            genre: self.genre.clone(),
+            pages: self.pages.clone(),
+            language: self.language.clone(),
+        }
     }
+    
 }

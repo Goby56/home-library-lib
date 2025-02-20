@@ -1,10 +1,9 @@
-use std::{collections::HashMap, slice::Iter};
+use std::collections::HashMap;
 use levenshtein::levenshtein;
 
 
 pub struct BkTree {
     pub root: BkNode,
-    pub bk_paths: Vec<TraversalPath>
 }
 
 #[derive(Clone)]
@@ -36,15 +35,12 @@ pub struct BkNode {
 
 impl BkTree {
     pub fn init(root: BkNode) -> Self {
-        BkTree { root, bk_paths: Vec::new() }
+        BkTree { root }
     }
 
     pub fn add_node(&mut self, identifier: String, book_refs: Vec<u32>) {
         let new_node = BkNode::create(identifier, book_refs);
-        let mut path = TraversalPath::new();
-        let node_added = self.root.add(&mut path, new_node);
-        if node_added { self.bk_paths.push(path) }
-        
+        let node_added = self.root.add(new_node);
     }
 
     pub fn search(&self, query: &str) -> Vec<SearchResult> {
@@ -53,14 +49,6 @@ impl BkTree {
         self.root.search(&query.to_lowercase(), tolerance, &mut result);
         return result;
     }
-    
-    pub fn get_references(&self, path: TraversalPath) -> &BkData {
-        let mut node = &self.root;
-        for dist in path.iter() {
-            node = node.children.get(dist).unwrap();
-        }
-        return &node.data;
-    }
 
     fn per_query_tolerance(query: &str) -> u16 {
         (query.len() as f32).powf(0.5).max(1.0) as u16
@@ -68,15 +56,14 @@ impl BkTree {
 }
 
 impl BkNode {
-    fn add(&mut self, path: &mut TraversalPath, new_node: BkNode) -> bool {
+    fn add(&mut self, new_node: BkNode) -> bool {
         let dist = self.distance_to(&new_node.identifier);
         if dist == 0 {
             self.data.add_refs(new_node.data.get_refs());
             return false;
         }
-        path.append(dist);
         match self.child_at(dist) {
-            Some(node) => return node.add(path, new_node),
+            Some(node) => return node.add(new_node),
             None => {
                 self.children.insert(dist, new_node);
                 return true;
@@ -126,34 +113,4 @@ impl BkNode {
 pub struct SearchResult {
     pub contents: BkData,
     pub distance: u16
-}
-
-#[derive(Clone)]
-pub struct TraversalPath(pub Vec<u16>);
-
-
-impl TraversalPath {
-    pub fn new() -> Self {
-        return TraversalPath(Vec::new());
-    }
-
-    pub fn append(&mut self, dist: u16) {
-        self.0.push(dist);
-    }
-
-    pub fn length(&self) -> usize {
-        return self.0.len();
-    }
-
-    pub fn all_but_last(&self) -> &[u16] {
-        return &self.0[..self.length() - 1];
-    }
-
-    pub fn last(&self) -> u16 {
-        return *self.0.last().unwrap();
-    }
-
-    pub fn iter(&self) -> Iter<'_, u16> {
-        return self.0.iter();
-    }
 }

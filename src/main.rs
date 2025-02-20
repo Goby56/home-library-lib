@@ -41,13 +41,6 @@ fn main() {
 }
 
 fn shelve(input: ShelveCommand, library: &mut Library) -> bool {
-    let book = Book { 
-        title: input.title, 
-        author: input.author, 
-        pub_date: input.publish_date, 
-        isbn: parse_isbn(&input.isbn), 
-        borrower: None 
-    }; 
     println!("Adding book: {}", book.title);
     library.try_add_book(book);
     return true;
@@ -97,8 +90,4 @@ fn list_borrows(input: ListBorrowsCommand, library: &Library) -> bool {
 }
 
 fn parse_isbn(isbn: &str) -> Isbn {
-    return match Isbn::from_str(isbn) {
-       Ok(result) => result,
-       Err(error) => panic!("Encountered problem converting input to ISBN due to: {:?}", error)
-    };
 }
