@@ -4,7 +4,7 @@ use std::{error::Error, fmt};
 pub struct BookBorrowingError {
     pub book_title: Option<String>,
     pub borrower: Option<String>,
-    pub isbn_search: String
+    pub uuid: String
 }
 
 impl Error for BookBorrowingError {}
@@ -16,7 +16,7 @@ impl fmt::Display for BookBorrowingError {
                 Some(borrower) => write!(f, "{} is already borrowed by {}", title, borrower),
                 None => write!(f, "{} is not borrowed by anyone", title)
             }
-            None => write!(f, "Book with ISBN {} not found ", self.isbn_search)
+            None => write!(f, "Book with UUID {} not found ", self.uuid)
         }
     }
 }

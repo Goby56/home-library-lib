@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use isbn::Isbn;
+use uuid::Uuid;
 
 use super::data::{Book, BookMetadata};
 use super::library::Library;
@@ -71,7 +72,7 @@ impl Serializer for Book {
     fn serialize(&self) -> String {
         format!(
             "{},{},{},{},{},{},{},{}\n", 
-            self.uuid,
+            self.uuid.to_string(),
             self.shelf,
             self.title, 
             self.author, 
@@ -85,12 +86,12 @@ impl Serializer for Book {
     fn deserialize(ser_str: &str) -> Self {
         let fields: Vec<&str> = ser_str.split(',').collect();
         Book { 
-            uuid: fields[0].to_string(),
+            uuid: Uuid::deserialize(fields[0]),
             shelf: fields[1].to_string(),
             title: fields[2].to_string(), 
             author: fields[3].to_string(), 
-            pub_date: fields[4].parse::<u16>().unwrap(), 
-            metadata: BookMetadata::deserialize(fields[5]),
+            pub_date: fields[4].parse::<i16>().unwrap(), 
+            metadata: Some(BookMetadata::deserialize(fields[5])),
             borrower: Option::deserialize(fields[6]),
             borrow_date: Option::deserialize(fields[7])
         }
@@ -130,6 +131,16 @@ impl Serializer for Isbn {
     }
 }
 
+impl Serializer for Uuid {
+    fn serialize(&self) -> String {
+        self.to_string()
+    }
+
+    fn deserialize(ser_str: &str) -> Self {
+        Uuid::parse_str(ser_str).unwrap()
+    }
+}
+
 impl <T: Serializer> Serializer for Option<T> {
     fn serialize(&self) -> String {
         match self {
@@ -153,6 +164,17 @@ impl Serializer for String {
 
     fn deserialize(ser_str: &str) -> Self {
         ser_str.to_string()
+    }
+}
+
+// TODO One impl for all numbers
+impl Serializer for i16 {
+    fn serialize(&self) -> String {
+        self.to_string()    
+    }
+
+    fn deserialize(ser_str: &str) -> Self {
+       ser_str.parse::<i16>().unwrap() 
     }
 }
 

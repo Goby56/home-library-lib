@@ -1,11 +1,18 @@
-use isbn::Isbn;
+use std::collections::HashMap;
+use std::vec;
+
+use uuid::Uuid;
 use levenshtein::levenshtein;
+use sorted_vec::partial::ReverseSortedVec;
 
 use crate::err::{BookBorrowingError, ListBorrowsError};
-use crate::searching::comparator::Comparison;
+use crate::searching::{Comparison, SearchResult};
 
 use super::bk::BkTree;
 use super::data::Book;
+use super::serialize::Serializer;
+use fuzzy_matcher::FuzzyMatcher;
+use fuzzy_matcher::skim::SkimMatcherV2;
 
 pub struct Library {
     pub bk_tree: Option<BkTree>,
@@ -17,92 +24,99 @@ impl Library {
         Library { bk_tree: None, books }
     }
 
-    pub fn try_add_book(&mut self, book: Book) {
-        self.books.push(book.clone());
-        let index = (self.books.len() - 1) as u32;
-        self.bk_tree.add_node(book.title, vec![index]);
-        self.bk_tree.add_node(format!("@{}", book.author), vec![index]);
-    } 
+    pub fn add_book(&mut self, book: Book) {
+        let index = (self.books.len()) as u32;
+        if let Some(tree) = self.bk_tree.as_mut() {
+            tree.add_node(book.title.clone(), vec![index]);
+            tree.add_node(format!("@{}", book.author), vec![index]);
+        }
+        self.books.push(book);
+    }
 
-    pub fn search(&self, query: &str, limit: Option<usize>, year_expr: Option<String>) -> Vec<&Book>  {
-        let mut book_results: Vec<(&Book, u16)> = Vec::new();
-        // if let Ok(isbn) = Isbn::from_str(query) {
-        //     book_results.extend(self.isbn_search(isbn));
-        // }
-        book_results.extend(self.bk_search(query));
+    pub fn search(&self, query: &str, limit: Option<usize>, year_expr: Option<String>) -> Vec<SearchResult>  {
+        let mut search_results: ReverseSortedVec<SearchResult> = ReverseSortedVec::new();
+
+        let mut comparisons: Vec<Comparison> = vec![];
         if let Some(year_comp) = year_expr {
-            let comparisons = Comparison::from_string(&year_comp);
-            for i in (0..book_results.len()).rev() {
-                if comparisons.iter().any(|comp| !comp.compare(book_results[i].0.pub_date as i32)) {
-                    book_results.swap_remove(i);
-                }
-            }  
+            comparisons.extend(Comparison::from_string(&year_comp));
         }
-        book_results.sort_by(|a, b| a.1.cmp(&b.1));
-        if let Some(l) = limit {
-            book_results = book_results[..l].to_vec();
-        } 
-        return book_results.iter().map(|e| e.0).collect();
-    }
 
-    fn isbn_search(&self, isbn: Isbn) -> Vec<(&Book, u16)> {
-        let mut books = vec![];
-        for b in &self.books {
-            if b.isbn == isbn {
-                books.push((b, 0));
+        let matcher = SkimMatcherV2::default();
+        for book in &self.books {
+            if !Comparison::batch_compare(&comparisons, book.pub_date as i32) {
+                continue;
+            }
+            if let Some(score) = matcher.fuzzy_match(&book.serialize(), query) {
+                search_results.insert(SearchResult{book: book.clone(), score}); 
             }
         }
-        return books;
+
+        // book_results.extend(self.bk_search(query));
+        let len = limit.unwrap_or(search_results.len());
+        return search_results[..len].to_vec();
     }
 
-    fn bk_search(&self, query: &str) -> Vec<(&Book, u16)> {
-        let mut books_and_distance = vec![];
-        for result in self.bk_tree.search(query) {
-            for book_ref in result.contents.get_refs() {
-                let b = self.books.get(book_ref as usize);
-                if let Some(b) = b {
-                    books_and_distance.push((b, result.distance));
+    fn bk_search(&mut self, query: &str) -> Vec<(&Book, u16)> {
+        if let Some(tree) = self.bk_tree.as_mut() {
+            let mut books_and_distance = vec![];
+            for result in tree.search(query) {
+                for book_ref in result.contents.get_refs() {
+                    let b = self.books.get(book_ref as usize);
+                    if let Some(b) = b {
+                        books_and_distance.push((b, result.distance));
+                    }
                 }
             }
+            return books_and_distance;
         }
-        return books_and_distance;
+        return vec![];
     }
 
-    pub fn modify_borrow(&mut self, user: Option<String>, isbn: Isbn) -> Result<Book, BookBorrowingError> {
+    pub fn modify_borrow(&mut self, user: Option<String>, uuid: Uuid) -> Result<Book, BookBorrowingError> {
         for i in 0..(self.books.len()) {
-            let book = &self.books[i];
-            if book.isbn != isbn {
+            let book = &mut self.books[i];
+            if !book.uuid.eq(&uuid) {
                 continue;
             }
             match &user {
-                Some(new_owner) => match &book.borrower {
-                    Some(curr_owner) => return Err(BookBorrowingError { 
+                Some(new_owner) => match &book.borrower { // Want to borrow
+                    Some(curr_owner) => return Err(BookBorrowingError { // Already borrowed
                         book_title: Some(book.title.clone()), 
                         borrower: Some(curr_owner.to_string()), 
-                        isbn_search: isbn.to_string() 
+                        uuid: uuid.to_string() 
                     }),
-                    None => self.borrows.add_ref(new_owner.to_string(), i as u32)
+                    None => book.borrower = Some(new_owner.clone()) // Not borrowed
                 },
-                None => match &book.borrower {
-                    Some(curr_owner) => self.borrows.del_ref(curr_owner.to_string(), i as u32),
+                None => match &book.borrower { // Want to return
+                    Some(_) => book.borrower = None,
                     None => return Err(BookBorrowingError { 
                         book_title: Some(book.title.clone()), 
                         borrower: None, 
-                        isbn_search: isbn.to_string() 
+                        uuid: uuid.to_string() 
                     })
                 }
             }
-            self.books[i].borrower = user.clone();
-            return Ok(self.books[i].clone())
+            return Ok(book.clone())
         }
-        Err(BookBorrowingError { book_title: None, borrower: None, isbn_search: isbn.to_string() })
+        Err(BookBorrowingError { book_title: None, borrower: None, uuid: uuid.to_string() })
     }
 
-    pub fn list_borrows(&self, borrower: &str) -> Result<Vec<Book>, ListBorrowsError> {
+    pub fn list_borrows(&self, borrower: &str) -> Result<Vec<&Book>, ListBorrowsError> {
         let lc_input = &borrower.to_lowercase();
+        let mut search_result: HashMap<String, Vec<&Book>> = HashMap::new();
+        for i in 0..(self.books.len()) {
+            let book = &self.books[i];
+            if let Some(book_borrower) = &book.borrower {
+                if book_borrower.eq(&borrower) {
+                    if let Some(books) = search_result.get_mut(borrower) {
+                        books.push(book);
+                    }
+                }
+            }
+        }
         let mut best_match = "";
         let mut shortest_dist = 10;
-        for user in self.borrows.0.keys() {
+        for user in search_result.keys() {
             let dist = levenshtein(lc_input, &user.to_lowercase());
             if dist < shortest_dist {
                 shortest_dist = dist;
@@ -110,7 +124,9 @@ impl Library {
             }
         }
         if &best_match.to_lowercase() == lc_input {
-            return Ok(self.get_books(self.borrows.0.get(best_match)));
+            if let Some(books) = search_result.get(best_match) {
+                return Ok(books.to_vec());
+            }
         }
         match best_match {
             "" => return Err(ListBorrowsError { 
@@ -123,22 +139,4 @@ impl Library {
             })
         };
     }
-
-    fn get_books(&self, book_refs: Option<&Vec<u32>>) -> Vec<Book> {
-        let mut books: Vec<Book> = Vec::new();
-        if let Some(book_refs) = book_refs {
-            for r in book_refs {
-                let b = self.books.get(*r as usize);
-                if let Some(b) = b {
-                    books.push(b.clone());
-                }
-            }
-        }
-        return books;
-    }
-
-
-    // fn flat_search(&self, isbn: Isbn) -> Vec<&Book> {
-    //     todo!();
-    // }
 }

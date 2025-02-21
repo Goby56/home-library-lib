@@ -31,7 +31,7 @@ pub struct ShelveCommand {
     /// Book author
     pub author: String,
     /// Publish date
-    pub publish_date: u16,
+    pub publish_date: i16,
     /// ISBN
     pub isbn: String,
 }
@@ -52,15 +52,15 @@ pub struct SearchCommand {
 
 #[derive(Debug, Args)]
 pub struct BorrowCommand {
-    /// ISBN of the book you want to borrow
-    pub isbn: String,
+    /// UUID of the book you want to borrow
+    pub uuid: String,
     pub borrower: String
 }
 
 #[derive(Debug, Args)]
 pub struct ReturnCommand {
-    /// ISBN of the book you want to return
-    pub isbn: String
+    /// UUID of the book you want to return
+    pub uuid: String
 }
 
 #[derive(Debug, Args)]

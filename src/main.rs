@@ -13,8 +13,8 @@ use args::{
     BorrowCommand, ReturnCommand,
     ListBorrowsCommand
 };
-use isbn::Isbn;
-use storing::{data::Book, serialize::FileSystemSerializer, library::Library};
+use uuid::Uuid;
+use storing::{data::Book, library::Library, serialize::{FileSystemSerializer, Serializer}};
 
 const LIBRARY_PATH: &str = "data";
 
@@ -41,26 +41,27 @@ fn main() {
 }
 
 fn shelve(input: ShelveCommand, library: &mut Library) -> bool {
+    let book = Book::from(input);
     println!("Adding book: {}", book.title);
-    library.try_add_book(book);
+    library.add_book(book);
     return true;
 }
 
 fn search(input: SearchCommand, library: &Library) -> bool {
-    let books = library.search(&input.search_str, input.limit.to_owned(), input.year_expr);
-    if books.is_empty() {
+    let search_results = library.search(&input.search_str, input.limit.to_owned(), input.year_expr);
+    if search_results.is_empty() {
         println!("Found no books");
     } else {
-        for b in books {
-            println!("{}", b.title)
+        for result in search_results {
+            println!("{} (score: {})", result.book.title, result.score)
         }
     }
     return false;
 }
 
 fn borrow(input: BorrowCommand, library: &mut Library) -> bool {
-    match library.modify_borrow(Some(input.borrower), parse_isbn(&input.isbn)) {
-        Ok(book) => println!("{} with ISBN {} is now borrowed by {}\n", book.title, input.isbn, book.borrower.unwrap()),
+    match library.modify_borrow(Some(input.borrower), Uuid::deserialize(&input.uuid)) {
+        Ok(book) => println!("{} is now borrowed by {}\n", book.title, book.borrower.unwrap()),
         Err(error) => {
             println!("Cannot borrow book!\n{error}");
             return false;
@@ -71,8 +72,8 @@ fn borrow(input: BorrowCommand, library: &mut Library) -> bool {
 }
 
 fn return_(input: ReturnCommand, library: &mut Library) -> bool {
-    match library.modify_borrow(None, parse_isbn(&input.isbn)) {
-        Ok(book) => println!("{} with ISBN {} has now been returned\n", book.title, input.isbn),
+    match library.modify_borrow(None, Uuid::deserialize(&input.uuid)) {
+        Ok(book) => println!("{} has now been returned\n", book.title),
         Err(error) => {
             println!("Cannot return book!\n{error}");
             return false;
@@ -87,7 +88,4 @@ fn list_borrows(input: ListBorrowsCommand, library: &Library) -> bool {
         Err(error) => println!("{error}")
     }
     return false;
-}
-
-fn parse_isbn(isbn: &str) -> Isbn {
 }

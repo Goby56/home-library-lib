@@ -10,5 +10,7 @@ isbn = "0.2.0"
 clap = { version = "4.0", features = ["derive"] }
 levenshtein = "1.0.5"
 regex = "1.11.1"
-skim = "0.15.0"
+fuzzy-matcher = "0.3.7"
+uuid = { version = "1.13.2", features = ["v4"] }
+sorted-vec = "0.8.6"
 

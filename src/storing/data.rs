@@ -11,19 +11,19 @@ pub struct Book {
     pub shelf: String,
     pub title: String,
     pub author: String,
-    pub pub_date: u16,
+    pub pub_date: i16,
     pub metadata: Option<BookMetadata>,
     pub borrower: Option<String>,
     pub borrow_date: Option<String>
 }
 
 impl Book {
-    pub fn from(input: ShelveCommand) {
+    pub fn from(input: ShelveCommand) -> Book {
         let metadata = None;
         if let Ok(isbn) = Isbn::from_str(&input.isbn) {
             // Fetch metadata
         };
-        let book = Book { 
+        return Book { 
             uuid: Uuid::new_v4(),
             shelf: input.shelf,
             title: input.title, 
@@ -32,7 +32,7 @@ impl Book {
             metadata, 
             borrower: None,
             borrow_date: None
-        }; 
+        };
     }
 }
 
