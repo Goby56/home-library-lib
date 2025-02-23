@@ -1,0 +1,4 @@
+Lord of the Rings,Tolkien,1954,9788845292613,Karl
+Lord of the Flies,William Golding,1954,9781573226127,Karl
+1984,George Orwell,1949,9780198185215,
+The Song of Achilles,Madeline Miller,2011,9780062060624,

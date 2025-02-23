@@ -1,9 +1,10 @@
-use std::{str::FromStr, fmt::Display};
+use std::{fmt::Display, os::linux::fs::MetadataExt, str::FromStr};
 
+use chrono::{DateTime, FixedOffset, Local};
 use isbn::Isbn;
 use uuid::Uuid;
 
-use crate::args::ShelveCommand;
+use crate::{args::ShelveCommand, err::BookBorrowingError};
 
 #[derive(Debug, Clone)]
 pub struct Book {
@@ -14,14 +15,15 @@ pub struct Book {
     pub pub_date: i16,
     pub metadata: Option<BookMetadata>,
     pub borrower: Option<String>,
-    pub borrow_date: Option<String>
+    pub borrow_date: Option<DateTime<FixedOffset>>
 }
 
 impl Book {
     pub fn from(input: ShelveCommand) -> Book {
-        let metadata = None;
+        let mut metadata = None;
         if let Ok(isbn) = Isbn::from_str(&input.isbn) {
             // Fetch metadata
+            metadata = Some(BookMetadata::from(isbn));
         };
         return Book { 
             uuid: Uuid::new_v4(),
@@ -29,10 +31,41 @@ impl Book {
             title: input.title, 
             author: input.author, 
             pub_date: input.publish_date, 
-            metadata, 
             borrower: None,
-            borrow_date: None
+            borrow_date: None,
+            metadata
         };
+    }
+
+    pub fn borrow(&mut self, user: &str) -> Result<(), BookBorrowingError> {
+        match &self.borrower {
+            Some(curr_owner) => return Err(BookBorrowingError { // Already borrowed
+                book_title: Some(self.title.clone()), 
+                borrower: Some(curr_owner.to_string()), 
+                uuid: self.uuid.to_string() 
+            }),
+            None => { // Not borrowed
+                self.borrower = Some(user.to_string());
+                let local_time = Local::now();
+                self.borrow_date = Some(local_time.with_timezone(local_time.offset()));
+                Ok(())
+            }
+        }
+    }
+
+    pub fn return_(&mut self) -> Result<(), BookBorrowingError> {
+        match &self.borrower {
+            Some(_) => {
+                self.borrower = None;
+                self.borrow_date = None;
+                Ok(())
+            },
+            None => return Err(BookBorrowingError {
+                book_title: Some(self.title.clone()), 
+                borrower: None, 
+                uuid: self.uuid.to_string()
+            })
+        }
     }
 }
 
@@ -48,6 +81,17 @@ pub struct BookMetadata {
     pub genre: Option<String>,
     pub pages: Option<u16>,
     pub language: Option<String>
+}
+
+impl BookMetadata {
+    pub fn from(isbn: Isbn) -> BookMetadata {
+        BookMetadata {
+            isbn,
+            genre: None,
+            pages: None,
+            language: None
+        }
+    }
 }
 
 impl Clone for BookMetadata {

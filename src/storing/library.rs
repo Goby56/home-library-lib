@@ -50,10 +50,11 @@ impl Library {
                 search_results.insert(SearchResult{book: book.clone(), score}); 
             }
         }
-
-        // book_results.extend(self.bk_search(query));
-        let len = limit.unwrap_or(search_results.len());
-        return search_results[..len].to_vec();
+        let cutoff = limit.unwrap_or(search_results.len());
+        if search_results.len() < cutoff {
+            // book_results.extend(self.bk_search(query));
+        }
+        return search_results[..cutoff].to_vec();
     }
 
     fn bk_search(&mut self, query: &str) -> Vec<(&Book, u16)> {
@@ -79,22 +80,8 @@ impl Library {
                 continue;
             }
             match &user {
-                Some(new_owner) => match &book.borrower { // Want to borrow
-                    Some(curr_owner) => return Err(BookBorrowingError { // Already borrowed
-                        book_title: Some(book.title.clone()), 
-                        borrower: Some(curr_owner.to_string()), 
-                        uuid: uuid.to_string() 
-                    }),
-                    None => book.borrower = Some(new_owner.clone()) // Not borrowed
-                },
-                None => match &book.borrower { // Want to return
-                    Some(_) => book.borrower = None,
-                    None => return Err(BookBorrowingError { 
-                        book_title: Some(book.title.clone()), 
-                        borrower: None, 
-                        uuid: uuid.to_string() 
-                    })
-                }
+                Some(new_owner) => book.borrow(new_owner)?,
+                None => book.return_()?
             }
             return Ok(book.clone())
         }

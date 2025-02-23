@@ -66,6 +66,9 @@ impl Comparison {
     }
 
     pub fn batch_compare(comparisons: &Vec<Comparison>, number: i32) -> bool {
+        if comparisons.len() == 0 {
+            return true;
+        }
         for comp in comparisons {
             if comp.compare(number) {
                 return true;

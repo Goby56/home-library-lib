@@ -87,5 +87,5 @@ fn list_borrows(input: ListBorrowsCommand, library: &Library) -> bool {
         Ok(books) => books.iter().enumerate().for_each(|(i, b)| println!("{}: {b}", i+1)),
         Err(error) => println!("{error}")
     }
-    return false;
+    return false
 }

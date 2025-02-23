@@ -3,6 +3,7 @@ use std::io::{Error, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use chrono::{DateTime, FixedOffset};
 use isbn::Isbn;
 use uuid::Uuid;
 
@@ -32,9 +33,11 @@ fn write_file(path: PathBuf, contents: String) -> Result<(), Error> {
 }
 
 fn read_file(path: PathBuf) -> Result<String, Error> { 
-    let mut file = File::open(path)?;
+    let file_result = File::open(path);
     let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
+    if let Ok(mut file) = file_result {
+        file.read_to_string(&mut contents)?;
+    }
     Ok(contents)
 }
 
@@ -91,9 +94,9 @@ impl Serializer for Book {
             title: fields[2].to_string(), 
             author: fields[3].to_string(), 
             pub_date: fields[4].parse::<i16>().unwrap(), 
-            metadata: Some(BookMetadata::deserialize(fields[5])),
-            borrower: Option::deserialize(fields[6]),
-            borrow_date: Option::deserialize(fields[7])
+            borrower: Option::deserialize(fields[5]),
+            borrow_date: Option::deserialize(fields[6]),
+            metadata: Option::deserialize(fields[7])
         }
     }
 }
@@ -101,7 +104,7 @@ impl Serializer for Book {
 impl Serializer for BookMetadata {
     fn serialize(&self) -> String {
         format!(
-            "{},{},{},{}\n", 
+            "{};{};{};{}\n", 
             self.isbn.serialize(),
             self.genre.serialize(),
             self.pages.serialize(),
@@ -110,13 +113,24 @@ impl Serializer for BookMetadata {
     }
 
     fn deserialize(ser_str: &str) -> Self {
-        let fields: Vec<&str> = ser_str.split(',').collect();
+        let fields: Vec<&str> = ser_str.split(';').collect();
         BookMetadata { 
             isbn: Isbn::deserialize(fields[0]),
             genre: Some(fields[1].to_string()),
-            pages: Some(fields[2].parse::<u16>().unwrap()),
+            pages: fields[2].parse::<u16>().ok(),
             language: Some(fields[3].to_string()),
         }
+        
+    }
+}
+impl Serializer for DateTime<FixedOffset> {
+    fn serialize(&self) -> String {
+        self.format("%d-%m-%Y %H:%M:%S %z").to_string()
+    }
+
+    fn deserialize(ser_str: &str) -> Self {
+        // Parses datetimes in the format 23-02-2025 09:59:18 +0100
+        DateTime::parse_from_str(ser_str, "%d-%m-%Y %H:%M:%S %z").unwrap()
         
     }
 }
