@@ -1,4 +1,4 @@
-use std::{fmt::Display, os::linux::fs::MetadataExt, str::FromStr};
+use std::{fmt::Display, str::FromStr};
 
 use chrono::{DateTime, FixedOffset, Local};
 use isbn::Isbn;

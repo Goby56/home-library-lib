@@ -151,6 +151,7 @@ impl Serializer for Uuid {
     }
 
     fn deserialize(ser_str: &str) -> Self {
+        println!("{}", ser_str);
         Uuid::parse_str(ser_str).unwrap()
     }
 }
