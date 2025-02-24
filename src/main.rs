@@ -1,6 +1,7 @@
 mod args;
 pub mod storing;
 pub mod searching;
+pub mod apis;
 mod err;
 
 use std::{str::FromStr, path::PathBuf};
@@ -41,9 +42,12 @@ fn main() {
 }
 
 fn shelve(input: ShelveCommand, library: &mut Library) -> bool {
-    let book = Book::from(input);
-    println!("Adding book: {}", book.title);
-    library.add_book(book);
+    if let Ok(book) = Book::from(input) {
+        println!("Adding book: {}", book.metadata.title);
+        library.add_book(book);
+    } else {
+        println!("Error adding book")
+    }
     return true;
 }
 
@@ -53,7 +57,7 @@ fn search(input: SearchCommand, library: &Library) -> bool {
         println!("Found no books");
     } else {
         for result in search_results {
-            println!("{} (score: {})", result.book.title, result.score)
+            println!("{} (score: {})", result.book.metadata.title, result.score)
         }
     }
     return false;
@@ -61,7 +65,7 @@ fn search(input: SearchCommand, library: &Library) -> bool {
 
 fn borrow(input: BorrowCommand, library: &mut Library) -> bool {
     match library.modify_borrow(Some(input.borrower), Uuid::deserialize(&input.uuid)) {
-        Ok(book) => println!("{} is now borrowed by {}\n", book.title, book.borrower.unwrap()),
+        Ok(book) => println!("{} is now borrowed by {}\n", book.metadata.title, book.borrower.unwrap()),
         Err(error) => {
             println!("Cannot borrow book!\n{error}");
             return false;
@@ -73,7 +77,7 @@ fn borrow(input: BorrowCommand, library: &mut Library) -> bool {
 
 fn return_(input: ReturnCommand, library: &mut Library) -> bool {
     match library.modify_borrow(None, Uuid::deserialize(&input.uuid)) {
-        Ok(book) => println!("{} has now been returned\n", book.title),
+        Ok(book) => println!("{} has now been returned\n", book.metadata.title),
         Err(error) => {
             println!("Cannot return book!\n{error}");
             return false;

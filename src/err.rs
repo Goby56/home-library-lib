@@ -1,4 +1,21 @@
-use std::{error::Error, fmt};
+use std::{error::Error, fmt::{self}};
+
+use isbn::Isbn;
+#[derive(Clone, Debug)]
+pub struct ShelveError {
+    pub isbn: Option<Isbn>
+}
+
+impl Error for ShelveError {}
+
+impl fmt::Display for ShelveError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.isbn {
+            Some(isbn) => write!(f, "Could not fetch book metadata from ISBN: {isbn}"),
+            None => write!(f, "Invalid ISBN")
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct BookBorrowingError {

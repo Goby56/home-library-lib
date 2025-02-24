@@ -74,14 +74,12 @@ impl FileSystemSerializer for Vec<Book> {
 impl Serializer for Book {
     fn serialize(&self) -> String {
         format!(
-            "{},{},{},{},{},{},{},{}\n", 
+            "{},{},{},{},{},{}\n", 
             self.uuid.to_string(),
-            self.shelf,
-            self.title, 
-            self.author, 
-            self.pub_date,
+            self.shelf.serialize(),
             self.borrower.serialize(),
             self.borrow_date.serialize(),
+            self.isbn.serialize(),
             self.metadata.serialize()
             )
     }
@@ -90,13 +88,11 @@ impl Serializer for Book {
         let fields: Vec<&str> = ser_str.split(',').collect();
         Book { 
             uuid: Uuid::deserialize(fields[0]),
-            shelf: fields[1].to_string(),
-            title: fields[2].to_string(), 
-            author: fields[3].to_string(), 
-            pub_date: fields[4].parse::<i16>().unwrap(), 
-            borrower: Option::deserialize(fields[5]),
-            borrow_date: Option::deserialize(fields[6]),
-            metadata: Option::deserialize(fields[7])
+            shelf: Option::deserialize(fields[1]),
+            borrower: Option::deserialize(fields[2]),
+            borrow_date: Option::deserialize(fields[3]),
+            isbn: Isbn::deserialize(fields[4]),
+            metadata: BookMetadata::deserialize(fields[5])
         }
     }
 }
@@ -104,8 +100,10 @@ impl Serializer for Book {
 impl Serializer for BookMetadata {
     fn serialize(&self) -> String {
         format!(
-            "{};{};{};{}\n", 
-            self.isbn.serialize(),
+            "{};{};{};{};{};{}\n", 
+            self.title,
+            self.author,
+            self.pub_date.to_string(),
             self.genre.serialize(),
             self.pages.serialize(),
             self.language.serialize()
@@ -115,10 +113,12 @@ impl Serializer for BookMetadata {
     fn deserialize(ser_str: &str) -> Self {
         let fields: Vec<&str> = ser_str.split(';').collect();
         BookMetadata { 
-            isbn: Isbn::deserialize(fields[0]),
-            genre: Some(fields[1].to_string()),
-            pages: fields[2].parse::<u16>().ok(),
-            language: Some(fields[3].to_string()),
+            title: fields[0].to_string(),
+            author: fields[1].to_string(),
+            pub_date: fields[2].parse::<i16>().unwrap(),
+            genre: Some(fields[3].to_string()),
+            pages: fields[4].parse::<u16>().ok(),
+            language: Some(fields[5].to_string()),
         }
         
     }
@@ -151,7 +151,6 @@ impl Serializer for Uuid {
     }
 
     fn deserialize(ser_str: &str) -> Self {
-        println!("{}", ser_str);
         Uuid::parse_str(ser_str).unwrap()
     }
 }

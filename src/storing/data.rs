@@ -1,46 +1,44 @@
 use std::{fmt::Display, str::FromStr};
-
 use chrono::{DateTime, FixedOffset, Local};
 use isbn::Isbn;
 use uuid::Uuid;
 
-use crate::{args::ShelveCommand, err::BookBorrowingError};
+use crate::{apis::google_books, args::ShelveCommand, err::{BookBorrowingError, ShelveError}};
 
 #[derive(Debug, Clone)]
 pub struct Book {
     pub uuid: Uuid,
-    pub shelf: String,
-    pub title: String,
-    pub author: String,
-    pub pub_date: i16,
-    pub metadata: Option<BookMetadata>,
+    pub shelf: Option<String>,
     pub borrower: Option<String>,
-    pub borrow_date: Option<DateTime<FixedOffset>>
+    pub borrow_date: Option<DateTime<FixedOffset>>,
+    pub isbn: Isbn,
+    pub metadata: BookMetadata,
 }
 
 impl Book {
-    pub fn from(input: ShelveCommand) -> Book {
-        let mut metadata = None;
+    pub fn from(input: ShelveCommand) -> Result<Book, ShelveError> {
         if let Ok(isbn) = Isbn::from_str(&input.isbn) {
-            // Fetch metadata
-            metadata = Some(BookMetadata::from(isbn));
+            let metadata = BookMetadata::from(isbn.clone())?;
+            return Ok(Book { 
+                uuid: Uuid::new_v4(),
+                shelf: input.shelf,
+                borrower: None,
+                borrow_date: None,
+                isbn,
+                metadata
+            });
         };
-        return Book { 
-            uuid: Uuid::new_v4(),
-            shelf: input.shelf,
-            title: input.title, 
-            author: input.author, 
-            pub_date: input.publish_date, 
-            borrower: None,
-            borrow_date: None,
-            metadata
-        };
+        Err(ShelveError { isbn: None })
+    }
+
+    pub fn get_search_str(&self) -> String {
+        format!("{},{}", self.isbn, self.metadata.get_search_str())
     }
 
     pub fn borrow(&mut self, user: &str) -> Result<(), BookBorrowingError> {
         match &self.borrower {
             Some(curr_owner) => return Err(BookBorrowingError { // Already borrowed
-                book_title: Some(self.title.clone()), 
+                book_title: Some(self.metadata.title.clone()), 
                 borrower: Some(curr_owner.to_string()), 
                 uuid: self.uuid.to_string() 
             }),
@@ -61,7 +59,7 @@ impl Book {
                 Ok(())
             },
             None => return Err(BookBorrowingError {
-                book_title: Some(self.title.clone()), 
+                book_title: Some(self.metadata.title.clone()), 
                 borrower: None, 
                 uuid: self.uuid.to_string()
             })
@@ -71,37 +69,37 @@ impl Book {
 
 impl Display for Book {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.title)
+        write!(f, "{}", self.metadata.title)
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BookMetadata {
-    pub isbn: Isbn,
+    pub title: String,
+    pub author: String,
+    pub pub_date: i16,
     pub genre: Option<String>,
     pub pages: Option<u16>,
     pub language: Option<String>
 }
 
 impl BookMetadata {
-    pub fn from(isbn: Isbn) -> BookMetadata {
-        BookMetadata {
-            isbn,
+    pub fn from(isbn: Isbn) -> Result<BookMetadata, ShelveError> {
+        match google_books::get_book_metadata(isbn) {
+            Ok(_) => println!("worky"),
+            Err(err) => println!("{err}")
+        }
+        Ok(BookMetadata {
+            title: String::from("GOT"),
+            author: String::from("George"),
+            pub_date: 0,
             genre: None,
             pages: None,
             language: None
-        }
+        })
     }
-}
 
-impl Clone for BookMetadata {
-    fn clone(&self) -> Self {
-        return BookMetadata {
-            isbn: Isbn::from_str(&self.isbn.to_string()).unwrap(),
-            genre: self.genre.clone(),
-            pages: self.pages.clone(),
-            language: self.language.clone(),
-        }
+    pub fn get_search_str(&self) -> String {
+        format!("{},{}", self.title, self.author)
     }
-    
 }

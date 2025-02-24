@@ -27,8 +27,8 @@ impl Library {
     pub fn add_book(&mut self, book: Book) {
         let index = (self.books.len()) as u32;
         if let Some(tree) = self.bk_tree.as_mut() {
-            tree.add_node(book.title.clone(), vec![index]);
-            tree.add_node(format!("@{}", book.author), vec![index]);
+            tree.add_node(book.metadata.title.clone(), vec![index]);
+            tree.add_node(format!("@{}", book.metadata.author), vec![index]);
         }
         self.books.push(book);
     }
@@ -43,7 +43,7 @@ impl Library {
 
         let matcher = SkimMatcherV2::default();
         for book in &self.books {
-            if !Comparison::batch_compare(&comparisons, book.pub_date as i32) {
+            if !Comparison::batch_compare(&comparisons, book.metadata.pub_date as i32) {
                 continue;
             }
             if let Some(score) = matcher.fuzzy_match(&book.serialize(), query) {

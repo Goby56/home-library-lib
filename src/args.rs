@@ -24,16 +24,11 @@ pub enum LibraryInteraction {
 
 #[derive(Debug, Args)]
 pub struct ShelveCommand {
-    /// Physical shelf
-    pub shelf: String,
-    /// Book title
-    pub title: String,
-    /// Book author
-    pub author: String,
-    /// Publish date
-    pub publish_date: i16,
     /// ISBN
     pub isbn: String,
+    /// Physical shelf
+    #[arg(short, long)]
+    pub shelf: Option<String>,
 }
 
 #[derive(Debug, Args)]
