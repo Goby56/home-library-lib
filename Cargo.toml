@@ -19,4 +19,5 @@ reqwest = { version = "0.12.12", features = ["json", "native-tls-vendored",
 json = "0.12.4"
 tokio = "1.43.0"
 serde_json = "1.0.139"
+rocket = "0.5.1"
 
