@@ -1,17 +1,15 @@
 mod args;
-pub mod storing;
-pub mod searching;
-pub mod apis;
+//pub mod storing;
+// pub mod searching;
+//pub mod apis;
 mod err;
 
-use std::{path::PathBuf, str::FromStr};
-
 #[macro_use] extern crate rocket;
-use rocket::{http::RawStr, State};
+use rocket::fairing::{self, AdHoc};
+use rocket::{Build, Rocket};
+use rocket::http::RawStr;
 use rocket_db_pools::{Database, Connection};
 use rocket_db_pools::sqlx;
-
-use storing::{data::Book, library::Library, serialize::FileSystemSerializer};
 
 const LIBRARY_PATH: &str = "data";
 
@@ -20,32 +18,44 @@ const LIBRARY_PATH: &str = "data";
 struct LibraryDB(sqlx::SqlitePool);
 
 #[get("/")]
-fn index(state: &State<Library>) -> String {
-    let mut content = String::new();
-    for b in &state.books {
-        content.push_str(&b.metadata.title);
+async fn index(mut db: Connection<LibraryDB>) -> String {
+    let result: Result<(u32,), sqlx::Error> = sqlx::query_as("SELECT editdist3('abc', 'abeze');").fetch_one(&mut **db).await;
+    match result {
+        Ok(r) => r.0.to_string(),
+        Err(err) => err.to_string()
     }
-    return content;
 }
 
 #[post("/shelve", format = "plain", data = "<isbn>")]
 async fn shelve(mut db: Connection<LibraryDB>, isbn: &RawStr) -> String {
-    let mut content = String::new();
-    if let Ok(books) = Book::from(isbn.to_string()).await {
-        for book in &books {
-            content.push_str(&book.get_search_str());
-        }
-        return content;
-    }
+    //let mut content = String::new();
+    // if let Ok(books) = Book::from(isbn.to_string()).await {
+    //     for book in &books {
+    //         content.push_str(&book.get_search_str());
+    //     }
+    //     return content;
+    // }
     return String::from("Could not find book with ISBN: {isbn}");
+}
+
+async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
+    match LibraryDB::fetch(&rocket) {
+        Some(db) => match sqlx::migrate!("db/migrations").run(&**db).await {
+            Ok(_) => Ok(rocket),
+            Err(err) => {
+                error!("Failed to initialize database: {}", err);
+                Err(rocket)
+            }
+        },
+        None => Err(rocket)
+    }
 }
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
-    let path_to_library = PathBuf::from_str(LIBRARY_PATH).unwrap();
-
     let _rocket = rocket::build()
-        .manage(Library::deserialize(path_to_library.clone()).unwrap())
+        .attach(LibraryDB::init())
+        .attach(AdHoc::try_on_ignite("Running sqlx migrations", run_migrations))
         .mount("/", routes![index, shelve])
         .launch()
         .await?;

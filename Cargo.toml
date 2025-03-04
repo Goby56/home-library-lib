@@ -21,3 +21,7 @@ serde = "1.0.218"
 rocket = "0.5.1"
 rocket_db_pools = { version = "0.2.0", features = ["sqlx_sqlite"] }
 
+[dependencies.sqlx]
+version = "0.7.0"
+default-features = false
+features = ["macros", "migrate"]
