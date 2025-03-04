@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use chrono::{DateTime, FixedOffset};
 use isbn::Isbn;
+use serde::Serialize;
 use uuid::Uuid;
 
 use super::data::{Book, BookMetadata};
@@ -102,7 +103,7 @@ impl Serializer for BookMetadata {
         format!(
             "{};{};{};{};{};{}\n", 
             self.title,
-            self.author,
+            self.authors.serialize(),
             self.pub_date.to_string(),
             self.genre.serialize(),
             self.pages.serialize(),

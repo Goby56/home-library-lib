@@ -1,9 +1,9 @@
 use std::{fmt::Display, str::FromStr};
-use chrono::{DateTime, FixedOffset, Local};
+use chrono::{DateTime, FixedOffset, Local, NaiveDate};
 use isbn::Isbn;
 use uuid::Uuid;
 
-use crate::{apis::google_books, args::ShelveCommand, err::{BookBorrowingError, ShelveError}};
+use crate::{apis, err::{BookBorrowingError, ShelveError}};
 
 #[derive(Debug, Clone)]
 pub struct Book {
@@ -16,17 +16,20 @@ pub struct Book {
 }
 
 impl Book {
-    pub fn from(input: ShelveCommand) -> Result<Book, ShelveError> {
-        if let Ok(isbn) = Isbn::from_str(&input.isbn) {
-            let metadata = BookMetadata::from(isbn.clone())?;
-            return Ok(Book { 
-                uuid: Uuid::new_v4(),
-                shelf: input.shelf,
-                borrower: None,
-                borrow_date: None,
-                isbn,
-                metadata
-            });
+    pub async fn from(isbn: String) -> Result<Vec<Book>, ShelveError> {
+        let mut books = vec![];
+        if let Ok(isbn) = Isbn::from_str(&isbn) {
+            for metadata in apis::fetch_book_metadata(&isbn).await {
+                books.push(Book { 
+                    uuid: Uuid::new_v4(),
+                    shelf: None,
+                    borrower: None,
+                    borrow_date: None,
+                    isbn: isbn.clone(),
+                    metadata
+                });
+            }
+            return Ok(books);
         };
         Err(ShelveError { isbn: None })
     }
@@ -76,30 +79,15 @@ impl Display for Book {
 #[derive(Clone, Debug)]
 pub struct BookMetadata {
     pub title: String,
-    pub author: String,
-    pub pub_date: i16,
-    pub genre: Option<String>,
+    pub authors: Vec<String>,
+    pub pub_date: Option<NaiveDate>,
+    pub genres: Vec<String>,
     pub pages: Option<u16>,
     pub language: Option<String>
 }
 
 impl BookMetadata {
-    pub fn from(isbn: Isbn) -> Result<BookMetadata, ShelveError> {
-        match google_books::get_book_metadata(isbn) {
-            Ok(_) => println!("worky"),
-            Err(err) => println!("{err}")
-        }
-        Ok(BookMetadata {
-            title: String::from("GOT"),
-            author: String::from("George"),
-            pub_date: 0,
-            genre: None,
-            pages: None,
-            language: None
-        })
-    }
-
     pub fn get_search_str(&self) -> String {
-        format!("{},{}", self.title, self.author)
+        format!("{},{}", self.title, self.authors.join(","))
     }
 }
