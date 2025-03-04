@@ -1,17 +1,23 @@
-use std::{path::PathBuf, str::FromStr};
-
-use rocket::{http::RawStr, State};
-use storing::{data::Book, library::Library, serialize::FileSystemSerializer};
-
 mod args;
 pub mod storing;
 pub mod searching;
 pub mod apis;
 mod err;
 
+use std::{path::PathBuf, str::FromStr};
+
 #[macro_use] extern crate rocket;
+use rocket::{http::RawStr, State};
+use rocket_db_pools::{Database, Connection};
+use rocket_db_pools::sqlx;
+
+use storing::{data::Book, library::Library, serialize::FileSystemSerializer};
 
 const LIBRARY_PATH: &str = "data";
+
+#[derive(Database)]
+#[database("hllite")]
+struct LibraryDB(sqlx::SqlitePool);
 
 #[get("/")]
 fn index(state: &State<Library>) -> String {
@@ -23,12 +29,13 @@ fn index(state: &State<Library>) -> String {
 }
 
 #[post("/shelve", format = "plain", data = "<isbn>")]
-async fn shelve(library: &State<Library>, isbn: &RawStr) -> String {
+async fn shelve(mut db: Connection<LibraryDB>, isbn: &RawStr) -> String {
+    let mut content = String::new();
     if let Ok(books) = Book::from(isbn.to_string()).await {
         for book in &books {
-            println!("{}", book.get_search_str())
+            content.push_str(&book.get_search_str());
         }
-        return format!("Added {} books", books.len());
+        return content;
     }
     return String::from("Could not find book with ISBN: {isbn}");
 }

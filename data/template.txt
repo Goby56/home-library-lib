@@ -1,1 +1,1 @@
-UUID,Shelf,Title,Author,Publishing date,ISBN,Genre,Borrower,Borrower date
+UUID,Shelf,Borrower,Borrow date,ISBN
