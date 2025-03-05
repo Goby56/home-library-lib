@@ -10,7 +10,6 @@ use crate::searching::{Comparison, SearchResult};
 
 use super::bk::BkTree;
 use super::data::Book;
-use super::serialize::Serializer;
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 

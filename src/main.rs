@@ -1,67 +1,69 @@
-mod args;
-//pub mod storing;
+// mod args;
+// pub mod storing;
 // pub mod searching;
-//pub mod apis;
-mod err;
+// pub mod apis;
+// mod err;
+mod db;
 
-#[macro_use] extern crate rocket;
-use rocket::fairing::{self, AdHoc};
-use rocket::{Build, Rocket};
-use rocket::http::RawStr;
-use rocket_db_pools::{Database, Connection};
-use rocket_db_pools::sqlx;
+use std::str::FromStr;
 
-const LIBRARY_PATH: &str = "data";
+use actix_web::{get, web::Data, App, HttpServer};
+use sqlx::{sqlite::SqliteConnectOptions, Pool, Sqlite, SqlitePool};
 
-#[derive(Database)]
-#[database("hllite")]
-struct LibraryDB(sqlx::SqlitePool);
+pub struct AppState {
+    db: Pool<Sqlite>
+}
+
+// #[get("/")]
+// async fn index(mut state: Data<AppState>) -> String {
+// }
+// 
+// #[post("/shelve", format = "plain", data = "<isbn>")]
+// async fn shelve(mut state: Data<AppState>) -> String {
+//     return String::from("Could not find book with ISBN: {isbn}");
+// }
+
+// async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
+//     match LibraryDB::fetch(&rocket) {
+//         Some(db) => match sqlx::migrate!("db/migrations").run(&**db).await {
+//             Ok(_) => Ok(rocket),
+//             Err(err) => {
+//                 error!("Failed to initialize database: {}", err);
+//                 Err(rocket)
+//             }
+//         },
+//         None => Err(rocket)
+//     }
+// }
 
 #[get("/")]
-async fn index(mut db: Connection<LibraryDB>) -> String {
-    let result: Result<(u32,), sqlx::Error> = sqlx::query_as("SELECT editdist3('abc', 'abeze');").fetch_one(&mut **db).await;
-    match result {
-        Ok(r) => r.0.to_string(),
-        Err(err) => err.to_string()
-    }
+async fn index(state: Data<AppState>) -> String {
+    format!("Hello actix web!") // <- response with app_name
 }
 
-#[post("/shelve", format = "plain", data = "<isbn>")]
-async fn shelve(mut db: Connection<LibraryDB>, isbn: &RawStr) -> String {
-    //let mut content = String::new();
-    // if let Ok(books) = Book::from(isbn.to_string()).await {
-    //     for book in &books {
-    //         content.push_str(&book.get_search_str());
-    //     }
-    //     return content;
-    // }
-    return String::from("Could not find book with ISBN: {isbn}");
+async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
+    let db_options = SqliteConnectOptions::from_str("sqlite://db/db.sqlite")?
+        .extension("./spellfix1");
+
+    let pool = SqlitePool::connect_with(db_options).await?;
+
+    sqlx::migrate!("./migrations").run(&pool).await?;
+
+    return Ok(pool);
 }
 
-async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
-    match LibraryDB::fetch(&rocket) {
-        Some(db) => match sqlx::migrate!("db/migrations").run(&**db).await {
-            Ok(_) => Ok(rocket),
-            Err(err) => {
-                error!("Failed to initialize database: {}", err);
-                Err(rocket)
-            }
-        },
-        None => Err(rocket)
-    }
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let pool = init_database().await.expect("Could not initialize database");
+    HttpServer::new(move || {
+        App::new()
+            .app_data(Data::new(AppState { db: pool.clone() }))
+            .service(index)
+    })
+    .bind(("127.0.0.1", 8080))?
+        .run().await
 }
 
-#[rocket::main]
-async fn main() -> Result<(), rocket::Error> {
-    let _rocket = rocket::build()
-        .attach(LibraryDB::init())
-        .attach(AdHoc::try_on_ignite("Running sqlx migrations", run_migrations))
-        .mount("/", routes![index, shelve])
-        .launch()
-        .await?;
-
-    Ok(())
-}
 
 // fn shelve(input: ShelveCommand, library: &mut Library) -> bool {
 //     if let Ok(book) = Book::from(input) {

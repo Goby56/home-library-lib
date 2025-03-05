@@ -1,4 +1,0 @@
-[default.databases.hllite]
-url = "db/db.sqlite"
-
-extensions = ["./spellfix1"]

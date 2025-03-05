@@ -1,13 +1,11 @@
 use std::{fmt::Display, str::FromStr};
 use chrono::{DateTime, FixedOffset, Local, NaiveDate};
 use isbn::Isbn;
-use uuid::Uuid;
 
 use crate::{apis, err::{BookBorrowingError, ShelveError}};
 
 #[derive(Debug, Clone)]
 pub struct Book {
-    pub uuid: Uuid,
     pub shelf: Option<String>,
     pub borrower: Option<String>,
     pub borrow_date: Option<DateTime<FixedOffset>>,
@@ -21,7 +19,6 @@ impl Book {
         if let Ok(isbn) = Isbn::from_str(&isbn) {
             for metadata in apis::fetch_book_metadata(&isbn).await {
                 books.push(Book { 
-                    uuid: Uuid::new_v4(),
                     shelf: None,
                     borrower: None,
                     borrow_date: None,
@@ -43,7 +40,6 @@ impl Book {
             Some(curr_owner) => return Err(BookBorrowingError { // Already borrowed
                 book_title: Some(self.metadata.title.clone()), 
                 borrower: Some(curr_owner.to_string()), 
-                uuid: self.uuid.to_string() 
             }),
             None => { // Not borrowed
                 self.borrower = Some(user.to_string());
