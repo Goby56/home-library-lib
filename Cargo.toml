@@ -22,4 +22,4 @@ actix-web = "4"
 [dependencies.sqlx]
 version = "0.8"
 default-features = false
-features = ["macros", "migrate", "runtime-tokio", "tls-native-tls", "sqlite"]
+features = ["macros", "migrate", "chrono", "runtime-tokio", "tls-native-tls", "sqlite"]

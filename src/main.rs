@@ -1,13 +1,15 @@
 // mod args;
 // pub mod storing;
 // pub mod searching;
-// pub mod apis;
+pub mod apis;
 // mod err;
 mod db;
 
 use std::str::FromStr;
 
-use actix_web::{get, web::Data, App, HttpServer};
+use actix_web::{get, post, web::{self, Data}, App, HttpResponse, HttpServer};
+use db::Book;
+use serde::Serialize;
 use sqlx::{sqlite::SqliteConnectOptions, Pool, Sqlite, SqlitePool};
 
 pub struct AppState {
@@ -18,10 +20,6 @@ pub struct AppState {
 // async fn index(mut state: Data<AppState>) -> String {
 // }
 // 
-// #[post("/shelve", format = "plain", data = "<isbn>")]
-// async fn shelve(mut state: Data<AppState>) -> String {
-//     return String::from("Could not find book with ISBN: {isbn}");
-// }
 
 // async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
 //     match LibraryDB::fetch(&rocket) {
@@ -36,9 +34,30 @@ pub struct AppState {
 //     }
 // }
 
+#[derive(serde::Deserialize)]
+struct ShelveData {
+    isbn: String
+}
+
+#[post("/shelve")]
+async fn shelve(state: Data<AppState>, data: web::Json<ShelveData>) -> actix_web::Result<String> {
+    let mut result = String::new();
+    for book in apis::fetch_book_metadata(&data.isbn).await {
+        result.push_str(&book.title);
+        match db::insert_book(&state.db, book).await {
+            Ok(_) => (),
+            Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+        };
+    }
+    Ok(format!("Added {result}"))
+}
+
 #[get("/")]
 async fn index(state: Data<AppState>) -> String {
-    format!("Hello actix web!") // <- response with app_name
+    if let Ok(books) = db::get_all_books(&state.db).await {
+        return books.iter().map(|t| t.0.clone()).collect::<Vec<String>>().join("\n");
+    }
+    format!("Hello actix web!")
 }
 
 async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
@@ -59,6 +78,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(Data::new(AppState { db: pool.clone() }))
             .service(index)
+            .service(shelve)
     })
     .bind(("127.0.0.1", 8080))?
         .run().await
