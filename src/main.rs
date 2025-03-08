@@ -7,32 +7,12 @@ mod db;
 
 use std::str::FromStr;
 
-use actix_web::{get, post, web::{self, Data}, App, HttpResponse, HttpServer};
-use db::Book;
-use serde::Serialize;
+use actix_web::{get, post, web::{self, Data}, App, HttpServer};
 use sqlx::{sqlite::SqliteConnectOptions, Pool, Sqlite, SqlitePool};
 
 pub struct AppState {
     db: Pool<Sqlite>
 }
-
-// #[get("/")]
-// async fn index(mut state: Data<AppState>) -> String {
-// }
-// 
-
-// async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
-//     match LibraryDB::fetch(&rocket) {
-//         Some(db) => match sqlx::migrate!("db/migrations").run(&**db).await {
-//             Ok(_) => Ok(rocket),
-//             Err(err) => {
-//                 error!("Failed to initialize database: {}", err);
-//                 Err(rocket)
-//             }
-//         },
-//         None => Err(rocket)
-//     }
-// }
 
 #[derive(serde::Deserialize)]
 struct ShelveData {
@@ -53,11 +33,11 @@ async fn shelve(state: Data<AppState>, data: web::Json<ShelveData>) -> actix_web
 }
 
 #[get("/")]
-async fn index(state: Data<AppState>) -> String {
-    if let Ok(books) = db::get_all_books(&state.db).await {
-        return books.iter().map(|t| t.0.clone()).collect::<Vec<String>>().join("\n");
+async fn index(state: Data<AppState>) -> actix_web::Result<String> {
+    match db::get_all_books(&state.db).await {
+        Ok(books) => Ok(books.iter().map(|t| t.0.clone()).collect::<Vec<String>>().join("\n")),
+        Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     }
-    format!("Hello actix web!")
 }
 
 async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {

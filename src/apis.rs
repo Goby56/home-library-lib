@@ -1,8 +1,5 @@
 #![allow(non_snake_case)]
 
-use std::str::FromStr;
-
-use chrono::NaiveDate;
 use serde::Deserialize;
 
 use crate::db::Book;
@@ -24,8 +21,8 @@ struct VolumeInfo {
     title: String,
     authors: Vec<String>,
     publishedDate: String,
-    language: Option<String>,
-    pageCount: Option<u16>,
+    language: String,
+    pageCount: u16,
     categories: Vec<String>
 }
 
@@ -37,9 +34,9 @@ pub async fn fetch_book_metadata(isbn: &str) -> Vec<Book> {
                 books.push(Book {
                     title: book.volumeInfo.title,
                     authors: book.volumeInfo.authors,
-                    publication_date: NaiveDate::from_str(&book.volumeInfo.publishedDate).expect("Publication date missing"),
-                    language: book.volumeInfo.language.expect("Language missing"),
-                    pages: book.volumeInfo.pageCount.expect("Page count missing"),
+                    publication_date: book.volumeInfo.publishedDate,
+                    language: book.volumeInfo.language,
+                    pages: book.volumeInfo.pageCount,
                     genres: book.volumeInfo.categories,
                     isbn: isbn.to_string()
                 })
