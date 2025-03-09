@@ -1,9 +1,5 @@
-// mod args;
-// pub mod storing;
-// pub mod searching;
 pub mod apis;
-// mod err;
-mod db;
+mod database;
 
 use std::str::FromStr;
 
@@ -24,7 +20,7 @@ async fn shelve(state: Data<AppState>, data: web::Json<ShelveData>) -> actix_web
     let mut result = String::new();
     for book in apis::fetch_book_metadata(&data.isbn).await {
         result.push_str(&book.title);
-        match db::insert_book(&state.db, book).await {
+        match database::insert_book(&state.db, book).await {
             Ok(_) => (),
             Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
         };
@@ -34,7 +30,7 @@ async fn shelve(state: Data<AppState>, data: web::Json<ShelveData>) -> actix_web
 
 #[get("/")]
 async fn index(state: Data<AppState>) -> actix_web::Result<String> {
-    match db::get_all_books(&state.db).await {
+    match database::get_all_books(&state.db).await {
         Ok(books) => Ok(books.iter().map(|t| t.0.clone()).collect::<Vec<String>>().join("\n")),
         Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     }
