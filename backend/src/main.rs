@@ -2,6 +2,7 @@ pub mod apis;
 mod database;
 
 use std::str::FromStr;
+use std::env;
 
 use actix_web::{get, post, web::{self, Data}, App, HttpServer};
 use sqlx::{sqlite::SqliteConnectOptions, Pool, Sqlite, SqlitePool};
@@ -37,8 +38,10 @@ async fn index(state: Data<AppState>) -> actix_web::Result<String> {
 }
 
 async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
-    let db_options = SqliteConnectOptions::from_str("sqlite://db/db.sqlite")?
-        .extension("./spellfix1");
+    let database_url = env::var("DATABASE_URL").unwrap();
+
+    let db_options = SqliteConnectOptions::from_str(&database_url)?
+        .extension("backend/spellfix1");
 
     let pool = SqlitePool::connect_with(db_options).await?;
 
@@ -49,6 +52,8 @@ async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    dotenv::dotenv().unwrap(); // Load .env file
+
     let pool = init_database().await.expect("Could not initialize database");
     HttpServer::new(move || {
         App::new()
