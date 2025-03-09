@@ -37,20 +37,21 @@ pub async fn insert_book(pool: &SqlitePool, book: Book) -> Result<(), sqlx::Erro
         }
     }
     // TODO Try better API that actually provides genre
-    // for genre in book.genres { // Insert genre and genre connection to book
-    //     let genre_id: Option<(i64,)> = sqlx::query_as("
-    //         INSERT INTO Genre (name) VALUES (?)
-    //         SELECT last_insert_rowid()")
-    //         .bind(genre)
-    //         .fetch_optional(pool).await?;
-    //     if let Some(id) = genre_id {
-    //         sqlx::query("
-    //             INSERT INTO GenreMatch (book, genre) VALUES (?, ?)")
-    //             .bind(book_id.0)
-    //             .bind(id.0)
-    //             .execute(pool).await?;
-    //     }
-    // }
+    for genre in book.genres { // Insert genre and genre connection to book
+        let genre_id: Option<(i64,)> = sqlx::query_as("
+            INSERT INTO Genre (name) VALUES (?)
+            ON CONFLICT(name) DO UPDATE SET name=name
+            RETURNING id")
+            .bind(genre)
+            .fetch_optional(pool).await?;
+        if let Some(id) = genre_id {
+            sqlx::query("
+                INSERT INTO GenreMatch (book, genre) VALUES (?, ?)")
+                .bind(book_id.0)
+                .bind(id.0)
+                .execute(pool).await?;
+        }
+    }
     Ok(())
 }
 
