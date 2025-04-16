@@ -1,48 +1,18 @@
 pub mod apis;
 mod database;
+mod routes;
+mod types;
 
-use std::env;
+use std::{env, vec};
 use std::str::FromStr;
 
-use actix_web::{
-    get, post,
-    web::{self, Data},
-    App, HttpServer,
-};
+use actix_cors::Cors;
+use actix_web::http;
+use actix_web::{web::Data, App, HttpServer};
 use sqlx::{sqlite::SqliteConnectOptions, Pool, Sqlite, SqlitePool};
 
 pub struct AppState {
     db: Pool<Sqlite>,
-}
-
-#[derive(serde::Deserialize)]
-struct ShelveData {
-    isbn: String,
-}
-
-#[post("/shelve")]
-async fn shelve(state: Data<AppState>, data: web::Json<ShelveData>) -> actix_web::Result<String> {
-    let mut result = String::new();
-    for book in apis::fetch_book_metadata(&data.isbn).await {
-        result.push_str(&book.title);
-        match database::insert_book(&state.db, book).await {
-            Ok(_) => (),
-            Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string())),
-        };
-    }
-    Ok(format!("Added {result}"))
-}
-
-#[get("/")]
-async fn index(state: Data<AppState>) -> actix_web::Result<String> {
-    match database::get_all_books(&state.db).await {
-        Ok(books) => Ok(books
-            .iter()
-            .map(|t| t.0.clone())
-            .collect::<Vec<String>>()
-            .join("\n")),
-        Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string())),
-    }
 }
 
 async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
@@ -65,12 +35,19 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Could not initialize database");
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allowed_origin("http://localhost:5173")
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_headers(vec![http::header::CONTENT_TYPE, http::header::AUTHORIZATION, http::header::ACCEPT])
+            .max_age(3600);
+
         App::new()
+            .wrap(cors)
             .app_data(Data::new(AppState { db: pool.clone() }))
-            .service(index)
-            .service(shelve)
+            .service(routes::index)
+            .service(routes::shelve)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("0.0.0.0", 8080))?
     .run()
     .await
 }

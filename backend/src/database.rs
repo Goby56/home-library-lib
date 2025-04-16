@@ -1,16 +1,8 @@
 use sqlx::SqlitePool;
 
-pub struct Book {
-    pub title: String,
-    pub authors: Vec<String>,
-    pub publication_date: String,
-    pub genres: Vec<String>,
-    pub pages: u16,
-    pub language: String,
-    pub isbn: String,
-}
+use crate::types;
 
-pub async fn insert_book(pool: &SqlitePool, book: Book) -> Result<(), sqlx::Error> {
+pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<(), sqlx::Error> {
     let book_id = sqlx::query_as::<_, (i64,)>("
         INSERT INTO Book (isbn, shelf, borrow, title, publication_date, pages, language)
         VALUES (?, NULL, NULL, ?, ?, ?, ?) RETURNING id")
@@ -83,11 +75,21 @@ pub async fn insert_book(pool: &SqlitePool, book: Book) -> Result<(), sqlx::Erro
 //     Ok(())
 // }
 
-pub async fn get_all_books(pool: &SqlitePool) -> Result<Vec<(String, String)>, sqlx::Error>{
-    let books: Vec<(String, String)> = sqlx::query_as(
-        "SELECT title, isbn FROM Book")
+pub async fn get_all_books(pool: &SqlitePool) -> Result<Vec<types::Book>, sqlx::Error>{
+    let books: Vec<(String, String, String, String, u16)> = sqlx::query_as(
+        "SELECT title, isbn, publication_date, language, pages FROM Book")
         .fetch_all(pool)
         .await?;
-    return Ok(books);
+    return Ok(books.iter().map(|b| {
+        types::Book {
+            title: b.0.clone(),
+            authors: vec![],
+            publication_date: b.2.clone(),
+            genres: vec![],
+            pages: b.4.clone(),
+            language: b.3.clone(),
+            isbn: b.1.clone()
+        }
+    }).collect())
 }
 

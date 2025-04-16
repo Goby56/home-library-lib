@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-use crate::database::Book;
+use crate::types::Book;
 
 const GOOGLE_BOOKS_API_URL: &str = "https://www.googleapis.com/books/v1/volumes?q=isbn:";
 
