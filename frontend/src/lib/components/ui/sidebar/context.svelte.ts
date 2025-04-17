@@ -37,7 +37,9 @@ class SidebarState {
 	// Convenience getter for checking if the sidebar is mobile
 	// without this, we would need to use `sidebar.isMobile.current` everywhere
 	get isMobile() {
-		return this.#isMobile.current;
+		// return this.#isMobile.current;
+        // I prefer it this way
+        return true;
 	}
 
 	// Event handler to apply to the `<svelte:window>`
@@ -53,7 +55,7 @@ class SidebarState {
 	};
 
 	toggle = () => {
-		return this.#isMobile.current
+		return this.isMobile
 			? (this.openMobile = !this.openMobile)
 			: this.setOpen(!this.open);
 	};

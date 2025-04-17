@@ -5,9 +5,9 @@
   import Search from "@lucide/svelte/icons/search";
   import Settings from "@lucide/svelte/icons/settings";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import { Footer } from "./ui/sheet";
 
   import DarkModeToggle from "./DarkModeToggle.svelte";
+  import SidebarToggleButton from "./SidebarToggleButton.svelte";"$lib/components/SidebarToggleButton.svelte"
  
   // Menu items.
   const items = [
@@ -40,6 +40,9 @@
 </script>
  
 <Sidebar.Root variant="sidebar">
+  <Sidebar.Header>
+    <SidebarToggleButton/>
+  </Sidebar.Header>
   <Sidebar.Content>
     <Sidebar.Group>
       <Sidebar.GroupLabel>Application</Sidebar.GroupLabel>

@@ -7,23 +7,14 @@
   import AppHeader from "$lib/components/AppHeader.svelte";
   import AppContent from "$lib/components/AppContent.svelte";
 
-  let sideBarOpen = $state(false);
-
-  function onSideBarChange(open: boolean) {
-    sideBarOpen = open;
-  }
-
   let { children } = $props();
 </script>
 
 <ModeWatcher />
-<Sidebar.Provider onOpenChange={onSideBarChange}>
+<Sidebar.Provider>
 	<AppSidebar />
 	<Sidebar.Inset>
-		<header class="flex w-full sticky h-16 items-center gap-2 bg-secondary border-b px-4">
-			<Sidebar.Trigger class="-ml-1" />
-      <AppHeader/>
-		</header>
+    <AppHeader/>
     <AppContent>
       {@render children()}
     </AppContent>
