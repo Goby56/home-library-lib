@@ -36,7 +36,7 @@ async fn main() -> std::io::Result<()> {
         .expect("Could not initialize database");
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin("http://localhost:5173")
+            .allowed_origin("http://192.168.1.223:5173")
             .allowed_methods(vec!["GET", "POST"])
             .allowed_headers(vec![http::header::CONTENT_TYPE, http::header::AUTHORIZATION, http::header::ACCEPT])
             .max_age(3600);
