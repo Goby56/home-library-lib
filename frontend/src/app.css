@@ -73,3 +73,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+::-webkit-scrollbar {
+    @apply w-2.5 h-2.5;
+   
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-secondary
+}
+ 
+::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-neutral-600 border-[1px] border-transparent border-solid bg-clip-padding;
+}
+

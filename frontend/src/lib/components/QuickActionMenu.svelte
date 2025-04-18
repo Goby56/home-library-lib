@@ -15,16 +15,16 @@
  
 <svelte:document onkeydown={handleKeydown} />
 
-<Button onclick={() => open = !open } variant="outline">
-  Quick action CTRL-K
+<Button onclick={() => open = !open } variant="outline" class="text-muted-foreground">
+  Kort-kommando CTRL-K
 </Button>
 
  
 <Command.Dialog bind:open>
-  <Command.Input placeholder="Type a command or search..." />
+  <Command.Input placeholder="Sök på webbsidan" />
   <Command.List>
     <Command.Empty>No results found.</Command.Empty>
-    <Command.Group heading="Suggestions">
+    <Command.Group heading="Förslag">
       <Command.Item>Calendar</Command.Item>
       <Command.Item>Search Emoji</Command.Item>
       <Command.Item>Calculator</Command.Item>

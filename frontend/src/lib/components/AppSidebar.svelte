@@ -4,39 +4,63 @@
   import Inbox from "@lucide/svelte/icons/inbox";
   import Search from "@lucide/svelte/icons/search";
   import Settings from "@lucide/svelte/icons/settings";
+  import Sailboat from "@lucide/svelte/icons/sailboat";
+  import Library from "@lucide/svelte/icons/library";
+  import Film from "@lucide/svelte/icons/film";
+  import User from "@lucide/svelte/icons/user";
+  import BookMarked from "@lucide/svelte/icons/film";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
 
   import DarkModeToggle from "./DarkModeToggle.svelte";
   import SidebarToggleButton from "./SidebarToggleButton.svelte";"$lib/components/SidebarToggleButton.svelte"
+    import Icon from "./ui/typography/icon.svelte";
+    import Plus from "@lucide/svelte/icons/plus";
  
   // Menu items.
-  const items = [
+  const categories = [
     {
-      title: "Home",
-      url: "#",
+      title: "Böcker",
+      url: "/books",
+      icon: Library,
+    },
+    {
+      title: "Filmer",
+      url: "/movies",
+      icon: Film,
+    },
+    {
+      title: "Båtar",
+      url: "/boats",
+      icon: Sailboat,
+    },
+  ];
+  const menuItems = [
+    {
+      title: "Hem",
+      url: "/",
       icon: House,
     },
     {
-      title: "Inbox",
-      url: "#",
-      icon: Inbox,
+      title: "Lägg tilll föremål",
+      url: "/add",
+      icon: Plus,
     },
     {
-      title: "Calendar",
+      title: "Mina sidor",
       url: "#",
+      icon: User,
+    },
+    {
+      title: "Kalender",
+      url: "/calendar",
       icon: Calendar,
     },
     {
-      title: "Search",
-      url: "#",
-      icon: Search,
-    },
-    {
-      title: "Settings",
+      title: "Inställningar",
       url: "#",
       icon: Settings,
     },
-  ];
+  ]
 </script>
  
 <Sidebar.Root variant="sidebar">
@@ -45,10 +69,29 @@
   </Sidebar.Header>
   <Sidebar.Content>
     <Sidebar.Group>
-      <Sidebar.GroupLabel>Application</Sidebar.GroupLabel>
+      <Sidebar.GroupLabel>Kategorier</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
-          {#each items as item (item.title)}
+          {#each categories as item (item.title)}
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton>
+                {#snippet child({ props })}
+                  <a href={item.url} {...props}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </a>
+                {/snippet}
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+          {/each}
+        </Sidebar.Menu>
+      </Sidebar.GroupContent>
+    </Sidebar.Group>
+    <Sidebar.Group>
+      <Sidebar.GroupLabel>Meny</Sidebar.GroupLabel>
+      <Sidebar.GroupContent>
+        <Sidebar.Menu>
+          {#each menuItems as item (item.title)}
             <Sidebar.MenuItem>
               <Sidebar.MenuButton>
                 {#snippet child({ props })}

@@ -7,10 +7,10 @@
 </script>
  
 <div class="relative w-full flex mx-8 max-w-1/2">
-  <div class="absolute flex items-center pl-3 w-full h-full">
-    <Search class="items-center size-5 text-neutral-400"/>
+  <div class="absolute flex items-center pl-3 w-full h-full pointer-events-none">
+    <Search class="items-center size-5 text-muted-foreground"/>
   </div>
-  <Input type="search" placeholder="Search for items" class="pl-10 w-full"/>
+  <Input type="search" placeholder="Sök efter föremål" class="pl-10 w-full"/>
 </div>
 
 <!--
