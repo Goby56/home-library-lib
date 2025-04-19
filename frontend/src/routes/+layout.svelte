@@ -16,8 +16,8 @@
 	<Sidebar.Inset>
     <AppHeader/>
     <AppContent>
-      {@render children()}
+      {@render children?.()}
     </AppContent>
-	</Sidebar.Inset>
+  </Sidebar.Inset>
 </Sidebar.Provider>
  

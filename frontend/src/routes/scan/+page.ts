@@ -22,12 +22,13 @@ export const load: PageLoad = async ({ url }) => {
   let book = null
   if (source === "qrbot") {
     if (format === "ean13") {
-        console.log(content)
-        let resp = await fetch(GOOGLE_BOOKS_API_URL + content).then((data) => data.json())
-        if (typeof resp?.items !== "undefined") {
-            book = resp.items[0].volumeInfo
-        }
+        book = await fetchBook(content)
     }
+  }
+
+  const isbn = url.searchParams.get("isbn")
+  if (isbn != null) {
+    book = await fetchBook(isbn)
   }
 
   return {
@@ -37,6 +38,13 @@ export const load: PageLoad = async ({ url }) => {
       book: book,
   };
 };
+
+async function fetchBook(isbn: string | null) {
+    let resp = await fetch(GOOGLE_BOOKS_API_URL + isbn).then((data) => data.json())
+    if (typeof resp?.items !== "undefined") {
+        return resp.items[0].volumeInfo
+    }
+}
 
 // const GOOGLE_BOOKS_API_URL: &str = "https://www.googleapis.com/books/v1/volumes?q=isbn:";
 // 

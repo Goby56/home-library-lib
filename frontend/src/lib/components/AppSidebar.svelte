@@ -13,8 +13,11 @@
 
   import DarkModeToggle from "./DarkModeToggle.svelte";
   import SidebarToggleButton from "./SidebarToggleButton.svelte";"$lib/components/SidebarToggleButton.svelte"
-    import Icon from "./ui/typography/icon.svelte";
-    import Plus from "@lucide/svelte/icons/plus";
+  import Icon from "./ui/typography/icon.svelte";
+  import Plus from "@lucide/svelte/icons/plus";
+
+  import { useSidebar } from "$lib/components/ui/sidebar/context.svelte.js";
+	const sidebar = useSidebar();
  
   // Menu items.
   const categories = [
@@ -76,7 +79,7 @@
             <Sidebar.MenuItem>
               <Sidebar.MenuButton>
                 {#snippet child({ props })}
-                  <a href={item.url} {...props}>
+                  <a onclick={() => sidebar.toggle()} href={item.url} {...props}>
                     <item.icon />
                     <span>{item.title}</span>
                   </a>
@@ -95,7 +98,7 @@
             <Sidebar.MenuItem>
               <Sidebar.MenuButton>
                 {#snippet child({ props })}
-                  <a href={item.url} {...props}>
+                  <a onclick={() => sidebar.toggle()} href={item.url} {...props}>
                     <item.icon />
                     <span>{item.title}</span>
                   </a>

@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import type { PageProps } from "./$types";
   let { data }: PageProps = $props();
+  import { onMount } from "svelte";
+
+  import Button from "$lib/components/ui/button/button.svelte";
+  import Pen from "@lucide/svelte/icons/pen";
+  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
 
   import placeHolderImage from "$lib/assets/placeholder_image.webp";
   
@@ -20,13 +24,13 @@
 <p class="text-muted-foreground text-xl pb-5">
 Hittade följande bok...
 </p>
-<div class="flex-col bg-muted/50 rounded-xl p-3">
+<div class="flex-col w-fit bg-muted/50 rounded-xl p-3">
   <div class="flex">
     <div>
       <img src="{image}" alt="{data.book.title} book cover"
-      class="rounded-xl mr-3 h-48">
+      class="rounded-xl h-48">
     </div>
-    <div>
+    <div class="mx-3">
       <h3 class="scroll-m-20 text-2xl font-semibold tracking-tight">
       { data.book.title }
       </h3>
@@ -38,6 +42,23 @@ Hittade följande bok...
         <li>Språk: { data.book.language }</li>
         <li>Antal sidor: { data.book.pageCount }</li>
       </ul>
+    </div>
+    <div class="flex flex-col justify-between">
+      <div class="flex justify-end">
+        <div class="flex justify-center items-center">
+          <Tooltip.Provider>
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                <Pen class="size-6 hover:scale-110 transition-all"/> 
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                <p>Ändra beskrivning</p>
+              </Tooltip.Content>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+        </div>
+      </div>
+      <Button>Lägg till bok</Button>
     </div>
   </div>
   <div>
