@@ -71,10 +71,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    @apply pr-0;
+    padding-right: 0 !important; /* fixes popup shifting the view */
   }
 }
 
-
+/* custom scrollbar
 ::-webkit-scrollbar {
     @apply w-2.5 h-2.5;
    
@@ -87,4 +89,5 @@
 ::-webkit-scrollbar-thumb {
     @apply rounded-full bg-neutral-600 border-[1px] border-transparent border-solid bg-clip-padding;
 }
+*/
 
