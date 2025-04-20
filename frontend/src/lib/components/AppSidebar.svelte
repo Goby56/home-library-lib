@@ -15,9 +15,16 @@
   import SidebarToggleButton from "./SidebarToggleButton.svelte";"$lib/components/SidebarToggleButton.svelte"
   import Icon from "./ui/typography/icon.svelte";
   import Plus from "@lucide/svelte/icons/plus";
+  import ChevronLeft from "@lucide/svelte/icons/chevrons-left";
 
   import { useSidebar } from "$lib/components/ui/sidebar/context.svelte.js";
 	const sidebar = useSidebar();
+
+  function proximitySidebarTrigger(event: MouseEvent) {
+    if (!sidebar.openMobile && event.clientX <= 10 && event.clientY >= 70) {
+      sidebar.toggle()
+    }
+  }
  
   // Menu items.
   const categories = [
@@ -65,8 +72,16 @@
     },
   ]
 </script>
+
+<svelte:window onpointermove={proximitySidebarTrigger}/>
+
+<!--
+<div class="fixed left-0 bottom-1/2 bg-primary">
+  <ChevronLeft/>
+</div>
+-->
  
-<Sidebar.Root variant="sidebar">
+<Sidebar.Root variant="sidebar" >
   <Sidebar.Header>
     <SidebarToggleButton/>
   </Sidebar.Header>

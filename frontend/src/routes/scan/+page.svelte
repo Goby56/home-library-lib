@@ -49,7 +49,7 @@ Hittade följande bok...
           <Tooltip.Provider>
             <Tooltip.Root>
               <Tooltip.Trigger>
-                <Pen class="size-6 hover:scale-110 transition-all"/> 
+                <Button type="button" variant="ghost" size="icon"><Pen/></Button>
               </Tooltip.Trigger>
               <Tooltip.Content>
                 <p>Ändra beskrivning</p>
