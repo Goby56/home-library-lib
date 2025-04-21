@@ -1,5 +1,6 @@
 <script lang="ts">
   import Button from "$lib/components/ui/button/button.svelte";
+  import { Separator } from "$lib/components/ui/separator/index.js";
   import SuperDebug from "sveltekit-superforms";
   import * as Form from "$lib/components/ui/form/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -36,13 +37,12 @@
 
 </script>
  
-<form method="POST" use:enhance id="book-form" class="flex flex-col gap-3">
+<form method="POST" use:enhance id="book-form" class="flex flex-col gap-3 py-3">
   <Form.Field {form} name="isbn">
     <Form.Control>
       {#snippet children({ props })}
-        <Form.Label class="text-base">ISBN</Form.Label>
         <div class="flex gap-3">
-          <Input {...props} bind:value={$formData.isbn} />
+          <Input {...props} placeholder="ISBN" bind:value={$formData.isbn} />
           <Tooltip.Provider>
             <Tooltip.Root>
               <Tooltip.Trigger>
@@ -62,62 +62,64 @@
     <Form.FieldErrors />
   </Form.Field>
 
-  <Form.Field {form} name="title">
-    <Form.Control>
-      {#snippet children({ props })}
-        <Form.Label class="text-base">Titel</Form.Label>
-        <Input {...props} bind:value={$formData.title} />
-      {/snippet}
-    </Form.Control>
-    <Form.FieldErrors />
-  </Form.Field>
+  <Separator/>
+
+  <div class="flex gap-5 w-full">
+    <Form.Field {form} name="title">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label class="text-base">Titel</Form.Label>
+          <Input {...props} placeholder="Bokens titel" bind:value={$formData.title} />
+        {/snippet}
+      </Form.Control>
+    </Form.Field>
+
+    <Form.Field {form} name="publication_year">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label class="text-base">Publicerad</Form.Label>
+          <Input {...props} type="number" bind:value={$formData.publication_year} />
+        {/snippet}
+      </Form.Control>
+    </Form.Field>
+  </div>
 
   <ArrayFormElement bind:array={$formData.authors} form={form} elementName="authors" label="Författare"/>
 
-  <Form.Field {form} name="publication_year">
-    <Form.Control>
-      {#snippet children({ props })}
-        <Form.Label class="text-base">Publiceringsår</Form.Label>
-        <Input {...props} bind:value={$formData.publication_year} />
-      {/snippet}
-    </Form.Control>
-    <Form.FieldErrors />
-  </Form.Field>
+  <div class="flex gap-5 w-full">
+    <Form.Field {form} name="page_count">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label class="text-base">Antal sidor</Form.Label>
+          <Input {...props} type="number" bind:value={$formData.page_count} />
+        {/snippet}
+      </Form.Control>
+    </Form.Field>
 
-  <Form.Field {form} name="language">
-    <Form.Control>
-      {#snippet children({ props })}
-        <Form.Label class="text-base">Språk</Form.Label>
-        <div>
-          <DropdownSelector 
-            bind:value={$formData.language} 
-            items={availableLanugages}
-            translations={{
-              choose: "Välj ett språk...",
-              search: "Sök efter ett språk",
-              notFound: "Kunde inte hitta språket"
-            }}/>
-        </div>
-      {/snippet}
-    </Form.Control>
-    <Form.Description>
-      Om språket inte finns, be Kalle att lägga till det.
-		</Form.Description>
-    <Form.FieldErrors />
-  </Form.Field>
+    <Form.Field {form} name="language">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label class="text-base">Språk</Form.Label>
+          <div>
+            <DropdownSelector 
+              bind:value={$formData.language} 
+              items={availableLanugages}
+              translations={{
+                choose: "Välj ett språk...",
+                search: "Sök efter ett språk",
+                notFound: "Kunde inte hitta språket"
+              }}/>
+          </div>
+        {/snippet}
+      </Form.Control>
+      <Form.Description>
+        Om språket inte finns, be Kalle att lägga till det.
+	  	</Form.Description>
+    </Form.Field>
+  </div>
 
   <ArrayFormElement bind:array={$formData.genres} form={form} elementName="genres" label="Genre"/>
 
-  <Form.Field {form} name="page_count">
-    <Form.Control>
-      {#snippet children({ props })}
-        <Form.Label class="text-base">Antal sidor</Form.Label>
-        <Input {...props} type="number" bind:value={$formData.page_count} />
-      {/snippet}
-    </Form.Control>
-    <Form.FieldErrors />
-  </Form.Field>
-  
   <div class="flex justify-end">
   <Form.Button>Lägg till bok</Form.Button>
   </div>

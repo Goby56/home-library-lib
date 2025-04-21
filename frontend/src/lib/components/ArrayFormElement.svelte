@@ -67,7 +67,7 @@
             </div>
           {/snippet}
 				</Form.Control>
-				<Form.FieldErrors />
+			<Form.FieldErrors />
 			</Form.ElementField>
 		{/each}
 	</Form.Fieldset>
