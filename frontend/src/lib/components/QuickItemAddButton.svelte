@@ -10,6 +10,7 @@
   import Hash from "@lucide/svelte/icons/hash";
 
   let isbnDialogOpen = $state(false)
+  let isbn = $state("")
 </script>
 
 <div class="fixed right-10 bottom-10 m-5 bg-primary hover:bg-primary/90 rounded-3xl">
@@ -48,8 +49,8 @@
       </Dialog.Description>
     </Dialog.Header>
     <div class="flex">
-      <Input type="search" id="isbn" placeholder="ISBN" class="mr-3" />
-      <Button type="submit">Sök</Button>
+      <Input type="search" id="isbn" bind:value={isbn} placeholder="ISBN" class="mr-3" />
+      <Button href="/add?isbn={isbn}">Sök</Button>
     </div>
   </Dialog.Content>
 </Dialog.Root>

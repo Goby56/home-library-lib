@@ -37,7 +37,7 @@
 
 </script>
  
-<form method="POST" use:enhance id="book-form" class="flex flex-col gap-3 py-3">
+<form method="POST" use:enhance id="book-form" class="flex flex-col gap-3 p-3">
   <Form.Field {form} name="isbn">
     <Form.Control>
       {#snippet children({ props })}
@@ -46,7 +46,7 @@
           <Tooltip.Provider>
             <Tooltip.Root>
               <Tooltip.Trigger>
-                <Button>Sök efter bok</Button>
+                <Button href="/add?isbn={$formData.isbn}">Sök efter bok</Button>
               </Tooltip.Trigger>
               <Tooltip.Content>
                 <p>Fyll i bokens information automatiskt</p>
@@ -104,6 +104,7 @@
             <DropdownSelector 
               bind:value={$formData.language} 
               items={availableLanugages}
+              name="language"
               translations={{
                 choose: "Välj ett språk...",
                 search: "Sök efter ett språk",
@@ -125,6 +126,8 @@
   </div>
 </form>
 
+<!--
 {#if window != undefined}
 	<SuperDebug data={$formData} />
 {/if}
+-->

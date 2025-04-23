@@ -20,7 +20,6 @@
     array = arrayInternal;
   })
 
-
   function addEmpty() {
     arrayInternal = [...arrayInternal, ""];
     tick().then(() => { // Wait for after dom has updated

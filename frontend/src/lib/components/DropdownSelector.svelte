@@ -7,8 +7,9 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { cn } from "$lib/utils.js";
    
-  let { value = $bindable(""), items, translations }: 
+  let { name, value = $bindable(""), items, translations }: 
     { 
+      name: string,
       value: string, 
       items: { 
         value: string, 
@@ -54,6 +55,7 @@
       </Button>
     {/snippet}
   </Popover.Trigger>
+  <input hidden value={value} name={name} />
   <Popover.Content class="w-[200px] p-0">
     <Command.Root>
       <Command.Input placeholder={translations.search} />
