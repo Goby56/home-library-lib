@@ -4,6 +4,7 @@ import { superValidate } from "sveltekit-superforms";
 import { zod } from "sveltekit-superforms/adapters";
 import { bookFormSchema } from "./book-form-schema";
 import { parseDate } from 'chrono-node';
+import axios from "axios";
 
 const GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes?q=isbn:";
 
@@ -47,11 +48,26 @@ export const actions: Actions = {
         form,
       });
     }
-    console.log(form)
+    
+    let response = {
+        success: false,
+        message: ""
+    }
+        
     // books: await fetch("http://192.168.1.223:8080/books").then((data) => data.json())
     // Send to backend
+    await axios.post("http://192.168.1.223:8080/shelve", form.data)
+        .then(resp => {
+            response.success = true;
+            response.message = resp.data;
+        })
+        .catch(err => {
+            response.success = false;
+            response.message = err;
+        })
     return {
       form,
+      response,
     };
   },
 };

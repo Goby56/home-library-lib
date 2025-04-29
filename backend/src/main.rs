@@ -1,4 +1,3 @@
-pub mod apis;
 mod database;
 mod routes;
 mod types;

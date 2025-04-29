@@ -19,13 +19,13 @@ pub struct ReservationStatus {
    borrower: String,
 }
 
-#[derive(serde::Serialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Book {
+    pub isbn: String,
     pub title: String,
     pub authors: Vec<String>,
-    pub publication_date: String,
+    pub publication_year: i16,
     pub genres: Vec<String>,
-    pub pages: u16,
+    pub page_count: u16,
     pub language: String,
-    pub isbn: String,
 }

@@ -1,7 +1,15 @@
 <script lang="ts">
-  import type { PageData } from "./$types.js";
+  import type { PageProps } from "./$types.js";
   import BookForm from "./book-form.svelte";
-  let { data }: { data: PageData } = $props();
+  let { data, form }: PageProps = $props();
+
+  import { toast } from "svelte-sonner";
+
+  $effect(() => {
+    if (form?.response?.success) {
+      toast(form.response.message)
+    }
+	});
 </script>
 
 <h2
@@ -9,5 +17,5 @@
 >
 Lägg till en bok
 </h2>
- 
+
 <BookForm {data} />

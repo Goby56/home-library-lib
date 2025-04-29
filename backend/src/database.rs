@@ -4,12 +4,12 @@ use crate::types;
 
 pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<(), sqlx::Error> {
     let book_id = sqlx::query_as::<_, (i64,)>("
-        INSERT INTO Book (isbn, shelf, borrow, title, publication_date, pages, language)
+        INSERT INTO Book (isbn, shelf, reservation, title, publication_year, page_count, language)
         VALUES (?, NULL, NULL, ?, ?, ?, ?) RETURNING id")
         .bind(book.isbn)
         .bind(book.title)
-        .bind(book.publication_date)
-        .bind(book.pages)
+        .bind(book.publication_year)
+        .bind(book.page_count)
         .bind(book.language)
         .fetch_one(pool).await?;
     
@@ -28,6 +28,7 @@ pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<(), sql
                 .execute(pool).await?;
         }
     }
+
     // TODO Try better API that actually provides genre
     for genre in book.genres { // Insert genre and genre connection to book
         let genre_id: Option<(i64,)> = sqlx::query_as("
@@ -76,19 +77,20 @@ pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<(), sql
 // }
 
 pub async fn get_all_books(pool: &SqlitePool) -> Result<Vec<types::Book>, sqlx::Error>{
-    let books: Vec<(String, String, String, String, u16)> = sqlx::query_as(
-        "SELECT title, isbn, publication_date, language, pages FROM Book")
+    let books: Vec<(String, String, i16, String, u16)> = sqlx::query_as(
+        "SELECT title, isbn, publication_year, language, page_count FROM Book")
         .fetch_all(pool)
         .await?;
+
     return Ok(books.iter().map(|b| {
         types::Book {
             title: b.0.clone(),
+            isbn: b.1.clone(),
             authors: vec![],
-            publication_date: b.2.clone(),
+            publication_year: b.2,
             genres: vec![],
-            pages: b.4.clone(),
+            page_count: b.4,
             language: b.3.clone(),
-            isbn: b.1.clone()
         }
     }).collect())
 }

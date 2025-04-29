@@ -7,13 +7,14 @@ CREATE TABLE "Book" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"isbn"	TEXT NOT NULL,
 	"shelf"	INTEGER,
-	"borrow"	INTEGER,
+	"reservation"	INTEGER,
 	"title"	TEXT NOT NULL,
-	"publication_date"	TEXT NOT NULL,
-	"pages"	INTEGER NOT NULL,
+	"publication_year"	INTEGER NOT NULL,
+	"page_count"	INTEGER NOT NULL,
 	"language"	TEXT NOT NULL,
+    "date_added" TEXT DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT),
-	FOREIGN KEY("borrow") REFERENCES "Borrow"("id"),
+	FOREIGN KEY("reservation") REFERENCES "Reservation"("id"),
 	FOREIGN KEY("shelf") REFERENCES "Shelf"("id")
 );
 CREATE TABLE "BookContribution" (
@@ -23,10 +24,12 @@ CREATE TABLE "BookContribution" (
 	FOREIGN KEY("author") REFERENCES "Author"("id"),
 	FOREIGN KEY("book") REFERENCES "Book"("id")
 );
-CREATE TABLE "Borrow" (
+CREATE TABLE "Reservation" (
 	"id"	INTEGER NOT NULL UNIQUE,
-	"borrower"	INTEGER,
-	"timestamp"	TEXT,
+	"user"	INTEGER,
+	"timestamp"	TEXT DEFAULT CURRENT_TIMESTAMP,
+    "start_Date" TEXT NOT NULL,
+    "end_date" TEXT NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 CREATE TABLE "Shelf" (
