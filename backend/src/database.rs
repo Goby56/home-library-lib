@@ -77,8 +77,23 @@ pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<(), sql
 // }
 
 pub async fn get_all_books(pool: &SqlitePool) -> Result<Vec<types::Book>, sqlx::Error>{
-    let books: Vec<(String, String, i16, String, u16)> = sqlx::query_as(
-        "SELECT title, isbn, publication_year, language, page_count FROM Book")
+    let books: Vec<(String, String, String, i16, String, u16, String)> = sqlx::query_as("
+        SELECT 
+            Book.title,
+            Book.isbn,
+            GROUP_CONCAT(Author.name, ',') AS authors,
+            Book.publication_year,
+            GROUP_CONCAT(Genre.name, ',') AS genres,
+            Book.page_count,
+            Book.language
+        FROM Book
+        JOIN BookContribution ON Book.id = BookContribution.book
+        JOIN Author ON BookContribution.author = Author.id
+        JOIN GenreMatch ON Book.id = GenreMatch.book
+        JOIN Genre ON GenreMatch.book = Book.id
+        GROUP BY 
+            Book.id, Book.title;
+        ")
         .fetch_all(pool)
         .await?;
 
@@ -86,11 +101,11 @@ pub async fn get_all_books(pool: &SqlitePool) -> Result<Vec<types::Book>, sqlx::
         types::Book {
             title: b.0.clone(),
             isbn: b.1.clone(),
-            authors: vec![],
-            publication_year: b.2,
-            genres: vec![],
-            page_count: b.4,
-            language: b.3.clone(),
+            authors: b.2.split(",").map(|s| s.to_string()).collect(),
+            publication_year: b.3,
+            genres: b.4.split(",").map(|s| s.to_string()).collect(),
+            page_count: b.5,
+            language: b.6.clone(),
         }
     }).collect())
 }
