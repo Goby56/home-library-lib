@@ -1,4 +1,4 @@
-use sqlx::SqlitePool;
+use sqlx::{pool, SqlitePool};
 
 use crate::types;
 
@@ -75,9 +75,10 @@ pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<(), sql
 //     }
 //     Ok(())
 // }
+//
 
-pub async fn get_all_books(pool: &SqlitePool) -> Result<Vec<types::Book>, sqlx::Error>{
-    let books: Vec<(String, String, String, i16, String, u16, String)> = sqlx::query_as("
+pub async fn query_books(pool: &SqlitePool, _search_str: Option<String>, isbn: Option<String>, limit: Option<u32>) -> Result<Vec<types::Book>, sqlx::Error>{
+    let mut sq = String::from(r#"
         SELECT 
             Book.title,
             Book.isbn,
@@ -90,23 +91,40 @@ pub async fn get_all_books(pool: &SqlitePool) -> Result<Vec<types::Book>, sqlx::
         JOIN BookContribution ON Book.id = BookContribution.book
         JOIN Author ON BookContribution.author = Author.id
         JOIN GenreMatch ON Book.id = GenreMatch.book
-        JOIN Genre ON GenreMatch.book = Book.id
-        GROUP BY 
-            Book.id, Book.title;
-        ")
-        .fetch_all(pool)
-        .await?;
+        JOIN Genre ON GenreMatch.genre = Genre.id
+        "#);
 
-    return Ok(books.iter().map(|b| {
+    if isbn.is_some() {
+        sq.push_str(" WHERE Book.isbn = ?");
+    }
+
+    sq.push_str(" GROUP BY Book.id, Book.title");
+
+    if limit.is_some() {
+        sq.push_str(" LIMIT ?");
+    }
+
+    sq.push(';');
+
+    let mut query = sqlx::query_as(&sq);
+    if let Some(isbn) = isbn {
+        query = query.bind(isbn);
+    }
+    if let Some(limit) = limit {
+        query = query.bind(limit);
+    }
+    let books: Vec<(String, String, String, i16, String, u16, String)> = query.fetch_all(pool).await?;
+
+    return Ok(books.into_iter().map(|b| {
         types::Book {
-            title: b.0.clone(),
-            isbn: b.1.clone(),
+            title: b.0,
+            isbn: b.1,
             authors: b.2.split(",").map(|s| s.to_string()).collect(),
             publication_year: b.3,
             genres: b.4.split(",").map(|s| s.to_string()).collect(),
             page_count: b.5,
-            language: b.6.clone(),
-        }
+            language: b.6,
+    }
+
     }).collect())
 }
-
