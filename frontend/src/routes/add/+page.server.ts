@@ -5,6 +5,7 @@ import { zod } from "sveltekit-superforms/adapters";
 import { bookFormSchema } from "./book-form-schema";
 import { parseDate } from 'chrono-node';
 import axios from "axios";
+import placeHolderImage from "$lib/assets/placeholder_image.webp";
 
 const GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes?q=isbn:";
 
@@ -42,21 +43,36 @@ export const load: PageServerLoad = async ({ url }) => {
 
 export const actions: Actions = {
   default: async (event) => {
-    const form = await superValidate(event, zod(bookFormSchema));
-    if (!form.valid) {
+    const bookForm = await superValidate(event, zod(bookFormSchema));
+    if (!bookForm.valid) {
       return fail(400, {
-        form,
+        form: bookForm,
       });
     }
+
+    let book = {
+        isbn: bookForm.data.isbn,
+        title: bookForm.data.title,
+        authors: bookForm.data.authors,
+        publication_year: bookForm.data.publication_year,
+        language: bookForm.data.language,
+        page_count: bookForm.data.page_count,
+        genres: bookForm.data.genres,
+    }
+
+    const formData = new FormData();
+
+    formData.append("json", new Blob([JSON.stringify(book)], { type: "application/json" }))
+
+    formData.append("file", bookForm.data.cover[0])
+
     
     let response = {
         success: false,
         message: ""
     }
         
-    // books: await fetch("http://192.168.1.223:8080/books").then((data) => data.json())
-    // Send to backend
-    await axios.post("http://192.168.1.223:8080/shelve", form.data)
+    await axios.post("http://192.168.1.223:8080/shelve", bookForm.data)
         .then(resp => {
             response.success = true;
             response.message = resp.data;
@@ -66,7 +82,7 @@ export const actions: Actions = {
             response.message = err;
         })
     return {
-      form,
+      form: bookForm,
       response,
     };
   },

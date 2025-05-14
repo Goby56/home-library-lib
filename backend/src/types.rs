@@ -1,4 +1,6 @@
+
 use serde::Serialize;
+use time::PrimitiveDateTime;
 
 pub trait Item {
     fn item_type() -> ItemType;
@@ -12,14 +14,22 @@ pub enum ItemType {
     Book
 }
 
-#[derive(serde::Serialize)]
+#[derive(sqlx::FromRow, serde::Serialize)]
 pub struct ReservationStatus {
-   start_date:  String,
-   end_date: Option<String>,
-   borrower: String,
+    id: u32,
+    user: String,
+    timestamp: PrimitiveDateTime,
+    start_date:  PrimitiveDateTime,
+    end_date: Option<PrimitiveDateTime>,
 }
 
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[derive(sqlx::FromRow, serde::Serialize)]
+pub struct Shelf {
+    id: u32,
+    name: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Book {
     pub isbn: String,
     pub title: String,
@@ -28,4 +38,12 @@ pub struct Book {
     pub genres: Vec<String>,
     pub page_count: u16,
     pub language: String,
+    pub copies: Vec<u32>
+}
+
+#[derive(serde::Serialize)]
+pub struct PhysicalBook {
+    pub id: u32,
+    pub shelf: Shelf,
+    pub reservation: Option<ReservationStatus>
 }

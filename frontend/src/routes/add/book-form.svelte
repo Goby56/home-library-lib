@@ -121,13 +121,11 @@
 
   <ArrayFormElement bind:array={$formData.genres} form={form} elementName="genres" label="Genre"/>
 
+  <input type="file" bind:files={$formData.cover} multiple={false} accept="image/webp, image/png, image/jpeg" required />
+
   <div class="flex justify-end">
   <Form.Button>Lägg till bok</Form.Button>
   </div>
 </form>
 
-<!--
-{#if window != undefined}
 	<SuperDebug data={$formData} />
-{/if}
--->

@@ -6,14 +6,19 @@ CREATE TABLE "Author" (
 CREATE TABLE "Book" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"isbn"	TEXT NOT NULL,
-	"shelf"	INTEGER,
-	"reservation"	INTEGER,
 	"title"	TEXT NOT NULL,
 	"publication_year"	INTEGER NOT NULL,
 	"page_count"	INTEGER NOT NULL,
 	"language"	TEXT NOT NULL,
     "date_added" TEXT DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY("id" AUTOINCREMENT),
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+CREATE TABLE "PhysicalBook" (
+	"id"	INTEGER NOT NULL UNIQUE,
+    "book" INTEGER NOT NULL,
+	"shelf"	INTEGER NOT NULL,
+	"reservation"	INTEGER,
+	FOREIGN KEY("book") REFERENCES "Book"("id"),
 	FOREIGN KEY("reservation") REFERENCES "Reservation"("id"),
 	FOREIGN KEY("shelf") REFERENCES "Shelf"("id")
 );
@@ -26,14 +31,20 @@ CREATE TABLE "BookContribution" (
 );
 CREATE TABLE "Reservation" (
 	"id"	INTEGER NOT NULL UNIQUE,
-	"user"	INTEGER,
+	"user"	INTEGER NOT NULL,
 	"timestamp"	TEXT DEFAULT CURRENT_TIMESTAMP,
-    "start_Date" TEXT NOT NULL,
-    "end_date" TEXT NOT NULL,
+    "start_date" TEXT NOT NULL,
+    "end_date" TEXT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 CREATE TABLE "Shelf" (
 	"id"	INTEGER NOT NULL UNIQUE,
-	"name"	INTEGER NOT NULL UNIQUE,
+	"name"	TEXT NOT NULL UNIQUE,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+CREATE TABLE "User" (
+    "id"    INTEGER NOT NULL UNIQUE,
+    "name"  TEXT NOT NULL UNIQUE,
+    "password" TEXT NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );

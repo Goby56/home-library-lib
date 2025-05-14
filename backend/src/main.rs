@@ -8,6 +8,7 @@ use std::str::FromStr;
 use actix_cors::Cors;
 use actix_web::http;
 use actix_web::{web::Data, App, HttpServer};
+use actix_files;
 use sqlx::{sqlite::SqliteConnectOptions, Pool, Sqlite, SqlitePool};
 
 pub struct AppState {
@@ -43,8 +44,10 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .app_data(Data::new(AppState { db: pool.clone() }))
-            .service(routes::index)
+            .service(routes::get_book)
+            .service(routes::get_books)
             .service(routes::shelve)
+            .service(actix_files::Files::new("/book-cover", "./../db/images/book-covers/"))
     })
     .bind(("0.0.0.0", 8080))?
     .run()
