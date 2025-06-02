@@ -46,7 +46,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(AppState { db: pool.clone() }))
             .service(routes::get_book)
             .service(routes::get_books)
-            .service(routes::shelve)
+            .service(routes::register_book)
+            .service(routes::add_physical_book)
             .service(actix_files::Files::new("/book-cover", "./../db/images/book-covers/"))
     })
     .bind(("0.0.0.0", 8080))?

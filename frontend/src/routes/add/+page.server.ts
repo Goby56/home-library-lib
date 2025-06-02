@@ -45,6 +45,8 @@ export const actions: Actions = {
   default: async (event) => {
     const bookForm = await superValidate(event, zod(bookFormSchema));
     if (!bookForm.valid) {
+        console.log(bookForm.errors)
+        console.log(bookForm.data.cover)
       return fail(400, {
         form: bookForm,
       });
@@ -71,8 +73,8 @@ export const actions: Actions = {
         success: false,
         message: ""
     }
-        
-    await axios.post("http://192.168.1.223:8080/shelve", bookForm.data)
+
+    await axios.post("http://192.168.1.223:8080/register_book", bookForm.data)
         .then(resp => {
             response.success = true;
             response.message = resp.data;

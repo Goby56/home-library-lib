@@ -1,8 +1,8 @@
-use sqlx::SqlitePool;
+use sqlx::{pool, SqlitePool};
 
-use crate::types;
+use crate::types::{self, Shelf};
 
-pub async fn get_book_from_isbn(pool: &SqlitePool, isbn: String) -> Result<(Option<types::Book>, Vec<types::PhysicalBook>), sqlx::Error>  {
+pub async fn get_physical_copies(pool: &SqlitePool, isbn: String) -> Result<(Option<types::Book>, Vec<types::PhysicalBook>), sqlx::Error>  {
     let book = get_books(pool, None, Some(isbn), Some(1)).await?.pop(); 
     // Vec should be length 0 or 1 so pop will give that element
                                                         
@@ -25,7 +25,7 @@ async fn get_physical_book(pool: &SqlitePool, id: u32) -> Result<Option<types::P
     if copy.is_none() {
         return Ok(None);
     }
-    let shelf = get_shelf(pool, copy.unwrap().0).await?;
+    let shelf = get_shelf(pool, Some(copy.unwrap().0), None).await?;
     let reservation = get_reservation(pool, copy.unwrap().1).await?;
     if shelf.is_none() {
         return Ok(None);
@@ -35,12 +35,36 @@ async fn get_physical_book(pool: &SqlitePool, id: u32) -> Result<Option<types::P
     }))
 }
 
-pub async fn get_shelf(pool: &SqlitePool, id: u32) -> Result<Option<types::Shelf>, sqlx::Error> {
-   let shelf: Option<types::Shelf> = sqlx::query_as("
-       SELECT id, name 
-       FROM Shelf 
-       WHERE id = ?").bind(id).fetch_optional(pool).await?;
-   Ok(shelf)
+pub async fn get_shelf(pool: &SqlitePool, id: Option<u32>, name: Option<String>) -> Result<Option<types::Shelf>, sqlx::Error> {
+    if let Some(id) = id {
+        let shelf: Option<types::Shelf> = sqlx::query_as("
+            SELECT id, name 
+            FROM Shelf 
+            WHERE id = ?").bind(id).fetch_optional(pool).await?;
+        return Ok(shelf);
+    }
+    if let Some(name) = name {
+        let shelf: Option<types::Shelf> = sqlx::query_as("
+            SELECT id, name 
+            FROM Shelf 
+            WHERE name = ?").bind(name).fetch_optional(pool).await?;
+        return Ok(shelf);
+    }
+    return Ok(None)
+}
+
+
+pub async fn get_or_create_shelf(pool: &SqlitePool, name: String) -> Result<Option<types::Shelf>, sqlx::Error> {
+    let shelf_id: Option<u32> = sqlx::query_scalar("
+        INSERT INTO Shelf (name) VALUES (?)
+        ON CONFLICT(name) DO UPDATE SET name=name
+        RETURNING id").bind(name.clone()).fetch_optional(pool).await?;
+    if let Some(id) = shelf_id {
+        return Ok(Some(Shelf {
+            id, name
+        }));
+    }
+    Ok(None)
 }
 
 pub async fn get_reservation(pool: &SqlitePool, id: u32) -> Result<Option<types::ReservationStatus>, sqlx::Error> {
@@ -66,7 +90,7 @@ pub async fn create_physical_book(pool: &SqlitePool, book: u32, shelf: u32) -> R
 }
 
 pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<u32, sqlx::Error> {
-    let book_id = sqlx::query_as::<_, (u32,)>("
+    let book_id: u32 = sqlx::query_scalar("
         INSERT INTO Book (isbn, title, publication_year, page_count, language)
         VALUES (?, ?, ?, ?, ?) RETURNING id")
         .bind(book.isbn)
@@ -77,42 +101,43 @@ pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<u32, sq
         .fetch_one(pool).await?;
     
     for author in book.authors { // Insert new author and connect to book
-        let author_id: Option<(u32,)> = sqlx::query_as("
+        let author_id: Option<u32> = sqlx::query_scalar("
             INSERT INTO Author (name) VALUES (?)
-            ON CONFLICT(name) DO UPDATE SET name=name
+            ON CONFLICT(name) DO UPDATE SET name=excluded.name
             RETURNING id")
             .bind(author)
             .fetch_optional(pool).await?;
         if let Some(id) = author_id {
             sqlx::query("
                 INSERT INTO BookContribution (book, author) VALUES (?, ?)")
-                .bind(book_id.0)
-                .bind(id.0)
+                .bind(book_id)
+                .bind(id)
                 .execute(pool).await?;
         }
     }
 
     for genre in book.genres { // Insert genre and genre connection to book
-        let genre_id: Option<(u32,)> = sqlx::query_as("
+        let genre_id: Option<u32> = sqlx::query_scalar("
             INSERT INTO Genre (name) VALUES (?)
-            ON CONFLICT(name) DO UPDATE SET name=name
+            ON CONFLICT(name) DO UPDATE SET name=excluded.name
             RETURNING id")
             .bind(genre)
             .fetch_optional(pool).await?;
         if let Some(id) = genre_id {
             sqlx::query("
                 INSERT INTO GenreMatch (book, genre) VALUES (?, ?)")
-                .bind(book_id.0)
-                .bind(id.0)
+                .bind(book_id)
+                .bind(id)
                 .execute(pool).await?;
         }
     }
-    Ok(book_id.0)
+    Ok(book_id)
 }
 
 pub async fn get_books(pool: &SqlitePool, _search_str: Option<String>, isbn: Option<String>, limit: Option<u32>) -> Result<Vec<types::Book>, sqlx::Error>{
     let mut sq = String::from(r#"
         SELECT 
+            Book.id,
             Book.title,
             Book.isbn,
             GROUP_CONCAT(DISTINCT Author.name, ',') AS authors,
@@ -148,18 +173,19 @@ pub async fn get_books(pool: &SqlitePool, _search_str: Option<String>, isbn: Opt
     if let Some(limit) = limit {
         query = query.bind(limit);
     }
-    let books: Vec<(String, String, String, i16, String, u16, String, String)> = query.fetch_all(pool).await?;
+    let books: Vec<(u32, String, String, String, i16, String, u16, String, String)> = query.fetch_all(pool).await?;
 
     return Ok(books.into_iter().map(|b| {
         types::Book {
-            title: b.0,
-            isbn: b.1,
-            authors: b.2.split(",").map(|s| s.to_string()).collect(),
-            publication_year: b.3,
-            genres: b.4.split(",").map(|s| s.to_string()).collect(),
-            page_count: b.5,
-            language: b.6,
-            copies: b.7.split(",").map(|s| s.parse::<u32>().unwrap()).collect(),
+            id: b.0,
+            title: b.1,
+            isbn: b.2,
+            authors: b.3.split(",").map(|s| s.to_string()).collect(),
+            publication_year: b.4,
+            genres: b.5.split(",").map(|s| s.to_string()).collect(),
+            page_count: b.6,
+            language: b.7,
+            copies: b.8.split(",").map(|s| s.parse::<u32>().unwrap()).collect(),
     }
 
     }).collect())

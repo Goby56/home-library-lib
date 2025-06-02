@@ -14,6 +14,8 @@
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import DropdownSelector from "$lib/components/DropdownSelector.svelte";
   import ArrayFormElement from "$lib/components/ArrayFormElement.svelte";
+  // import ImageInput from "$lib/components/ImageInput.svelte";
+  import placeHolderImage from "$lib/assets/placeholder_image.webp";
  
   let { data }: { data: { form: SuperValidated<Infer<FormSchema>> } } =
     $props();
@@ -23,6 +25,16 @@
   });
  
   const { form: formData, enhance } = form;
+
+  let coverImageURL = $state(placeHolderImage);
+
+  function onCoverImageChange(event: Event) {
+    const files = (event.target as HTMLInputElement).files;
+    if (files && files.length > 0) {
+      $formData.cover = files[0];
+      coverImageURL = URL.createObjectURL(files[0])
+    }
+  }
 
   const availableLanugages = [
     {
@@ -60,70 +72,82 @@
       En unik sträng siffror som identifierar din boks utgåva. Du kan oftast hitta den nedanför en streckkod på baksidan.
 		</Form.Description>
     <Form.FieldErrors />
-  </Form.Field>
+  </Form.Field> 
 
   <Separator/>
+  
+  <div class="flex justify-start flex-col gap-3 md:flex-row w-full">
+    <div class="flex flex-col flex-grow gap-3">
+      <div class="flex gap-5 w-full">
+        <Form.Field {form} name="title">
+          <Form.Control>
+            {#snippet children({ props })}
+              <Form.Label class="text-base">Titel</Form.Label>
+              <Input {...props} placeholder="Bokens titel" bind:value={$formData.title} />
+            {/snippet}
+          </Form.Control>
+        </Form.Field>
 
-  <div class="flex gap-5 w-full">
-    <Form.Field {form} name="title">
-      <Form.Control>
-        {#snippet children({ props })}
-          <Form.Label class="text-base">Titel</Form.Label>
-          <Input {...props} placeholder="Bokens titel" bind:value={$formData.title} />
-        {/snippet}
-      </Form.Control>
-    </Form.Field>
+        <Form.Field {form} name="publication_year">
+          <Form.Control>
+            {#snippet children({ props })}
+              <Form.Label class="text-base">Publicerad</Form.Label>
+              <Input {...props} type="number" bind:value={$formData.publication_year} />
+            {/snippet}
+          </Form.Control>
+        </Form.Field>
+      </div>
 
-    <Form.Field {form} name="publication_year">
-      <Form.Control>
-        {#snippet children({ props })}
-          <Form.Label class="text-base">Publicerad</Form.Label>
-          <Input {...props} type="number" bind:value={$formData.publication_year} />
-        {/snippet}
-      </Form.Control>
-    </Form.Field>
+      <ArrayFormElement bind:array={$formData.authors} form={form} elementName="authors" label="Författare"/>
+
+      <div class="flex gap-5 w-full">
+        <Form.Field {form} name="page_count">
+          <Form.Control>
+            {#snippet children({ props })}
+              <Form.Label class="text-base">Antal sidor</Form.Label>
+              <Input {...props} type="number" bind:value={$formData.page_count} />
+            {/snippet}
+          </Form.Control>
+        </Form.Field>
+
+        <Form.Field {form} name="language">
+          <Form.Control>
+            {#snippet children({ props })}
+              <Form.Label class="text-base">Språk</Form.Label>
+              <div>
+                <DropdownSelector 
+                  bind:value={$formData.language} 
+                  items={availableLanugages}
+                  name="language"
+                  translations={{
+                    choose: "Välj ett språk...",
+                    search: "Sök efter ett språk",
+                    notFound: "Kunde inte hitta språket"
+                  }}/>
+              </div>
+            {/snippet}
+          </Form.Control>
+          <Form.Description>
+            Om språket inte finns, be Kalle att lägga till det.
+	      	</Form.Description>
+        </Form.Field>
+      </div>
+
+      <ArrayFormElement bind:array={$formData.genres} form={form} elementName="genres" label="Genre"/>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+      <div>
+        <img src="{coverImageURL}" alt="book cover"
+        class="rounded-xl h-80">
+      </div>
+      <Button variant="outline" class="relative">
+        Välj bokomslag
+        <input class="absolute w-full opacity-0" type="file" onchange={onCoverImageChange} multiple={false} accept="image/webp, image/png, image/jpeg" required/>
+      </Button>
+    </div>
   </div>
 
-  <ArrayFormElement bind:array={$formData.authors} form={form} elementName="authors" label="Författare"/>
-
-  <div class="flex gap-5 w-full">
-    <Form.Field {form} name="page_count">
-      <Form.Control>
-        {#snippet children({ props })}
-          <Form.Label class="text-base">Antal sidor</Form.Label>
-          <Input {...props} type="number" bind:value={$formData.page_count} />
-        {/snippet}
-      </Form.Control>
-    </Form.Field>
-
-    <Form.Field {form} name="language">
-      <Form.Control>
-        {#snippet children({ props })}
-          <Form.Label class="text-base">Språk</Form.Label>
-          <div>
-            <DropdownSelector 
-              bind:value={$formData.language} 
-              items={availableLanugages}
-              name="language"
-              translations={{
-                choose: "Välj ett språk...",
-                search: "Sök efter ett språk",
-                notFound: "Kunde inte hitta språket"
-              }}/>
-          </div>
-        {/snippet}
-      </Form.Control>
-      <Form.Description>
-        Om språket inte finns, be Kalle att lägga till det.
-	  	</Form.Description>
-    </Form.Field>
-  </div>
-
-  <ArrayFormElement bind:array={$formData.genres} form={form} elementName="genres" label="Genre"/>
-
-  <input type="file" bind:files={$formData.cover} multiple={false} accept="image/webp, image/png, image/jpeg" required />
-
-  <div class="flex justify-end">
+  <div class="flex md:justify-end justify-center">
   <Form.Button>Lägg till bok</Form.Button>
   </div>
 </form>

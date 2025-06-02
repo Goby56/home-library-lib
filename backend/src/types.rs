@@ -25,12 +25,13 @@ pub struct ReservationStatus {
 
 #[derive(sqlx::FromRow, serde::Serialize)]
 pub struct Shelf {
-    id: u32,
-    name: String,
+    pub id: u32,
+    pub name: String,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Book {
+    pub id: u32,
     pub isbn: String,
     pub title: String,
     pub authors: Vec<String>,
