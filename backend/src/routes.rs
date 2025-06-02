@@ -1,5 +1,5 @@
 use std::io::BufReader;
-use image;
+use image::{self, ImageReader};
 
 use actix_web::{get, post, web::{self, Data}, Responder, Result,};
 
@@ -20,11 +20,10 @@ pub async fn register_book(state: Data<AppState>, MultipartForm(form): Multipart
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
 
     let reader = BufReader::new(form.file.file.reopen()?);
-
-    let img = image::load(reader, image::ImageFormat::WebP)
+    let img = ImageReader::new(reader).with_guessed_format()?.decode()
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
 
-    img.save(format!("./../db/images/book-covers/{}.webp", form.json.isbn))
+    img.save(format!("./backend/db/images/book-covers/{}.webp", form.json.isbn))
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
 
     Ok(format!("Shelved {}. Access its cover at '/book-cover/{}'", form.json.title, form.json.isbn))

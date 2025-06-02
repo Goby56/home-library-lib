@@ -15,7 +15,7 @@ export const bookFormSchema = z.object({
     genres: z.array(z.string().min(1)).default([""]),
     cover: z.instanceof(File).refine(imageFileValidator, {
       message: "The file must be an image of format WebP, JPEG, or PNG"
-    }),
+    }).refine((f) => f.size < 100_000, 'Max 100 kB upload size.')
 })
 
 export type FormSchema = typeof bookFormSchema;

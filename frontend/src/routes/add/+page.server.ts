@@ -1,9 +1,9 @@
 import type { PageServerLoad, Actions } from "./$types.js";
-import { fail } from "@sveltejs/kit";
-import { superValidate } from "sveltekit-superforms";
+import { superValidate, fail, withFiles } from "sveltekit-superforms";
 import { zod } from "sveltekit-superforms/adapters";
 import { bookFormSchema } from "./book-form-schema";
 import { parseDate } from 'chrono-node';
+// import { fail } from "@sveltejs/kit";
 import axios from "axios";
 import placeHolderImage from "$lib/assets/placeholder_image.webp";
 
@@ -43,16 +43,15 @@ export const load: PageServerLoad = async ({ url }) => {
 
 export const actions: Actions = {
   default: async (event) => {
-    const bookForm = await superValidate(event, zod(bookFormSchema));
+  const bookForm = await superValidate(event, zod(bookFormSchema));
     if (!bookForm.valid) {
-        console.log(bookForm.errors)
-        console.log(bookForm.data.cover)
-      return fail(400, {
-        form: bookForm,
-      });
+        return fail(400, {
+            form: bookForm,
+        });
     }
 
     let book = {
+        id: 0,
         isbn: bookForm.data.isbn,
         title: bookForm.data.title,
         authors: bookForm.data.authors,
@@ -60,33 +59,15 @@ export const actions: Actions = {
         language: bookForm.data.language,
         page_count: bookForm.data.page_count,
         genres: bookForm.data.genres,
+        copies: []
     }
 
     const formData = new FormData();
 
     formData.append("json", new Blob([JSON.stringify(book)], { type: "application/json" }))
+    formData.append("file", bookForm.data.cover)
 
-    formData.append("file", bookForm.data.cover[0])
-
-    
-    let response = {
-        success: false,
-        message: ""
-    }
-
-    await axios.post("http://192.168.1.223:8080/register_book", bookForm.data)
-        .then(resp => {
-            response.success = true;
-            response.message = resp.data;
-        })
-        .catch(err => {
-            response.success = false;
-            response.message = err;
-        })
-    return {
-      form: bookForm,
-      response,
-    };
+    return await axios.post("http://192.168.1.223:8080/register_book", formData);
   },
 };
 

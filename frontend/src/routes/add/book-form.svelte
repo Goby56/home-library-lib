@@ -8,13 +8,12 @@
   import {
     type SuperValidated,
     type Infer,
-    superForm,
+    superForm, fileProxy
   } from "sveltekit-superforms";
   import { zodClient } from "sveltekit-superforms/adapters";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import DropdownSelector from "$lib/components/DropdownSelector.svelte";
   import ArrayFormElement from "$lib/components/ArrayFormElement.svelte";
-  // import ImageInput from "$lib/components/ImageInput.svelte";
   import placeHolderImage from "$lib/assets/placeholder_image.webp";
  
   let { data }: { data: { form: SuperValidated<Infer<FormSchema>> } } =
@@ -26,12 +25,12 @@
  
   const { form: formData, enhance } = form;
 
+  const coverImageFile = fileProxy(form, 'cover')
   let coverImageURL = $state(placeHolderImage);
 
   function onCoverImageChange(event: Event) {
     const files = (event.target as HTMLInputElement).files;
     if (files && files.length > 0) {
-      $formData.cover = files[0];
       coverImageURL = URL.createObjectURL(files[0])
     }
   }
@@ -49,7 +48,7 @@
 
 </script>
  
-<form method="POST" use:enhance id="book-form" class="flex flex-col gap-3 p-3">
+<form method="POST" use:enhance id="book-form" enctype="multipart/form-data" class="flex flex-col gap-3 p-3">
   <Form.Field {form} name="isbn">
     <Form.Control>
       {#snippet children({ props })}
@@ -142,7 +141,7 @@
       </div>
       <Button variant="outline" class="relative">
         Välj bokomslag
-        <input class="absolute w-full opacity-0" type="file" onchange={onCoverImageChange} multiple={false} accept="image/webp, image/png, image/jpeg" required/>
+        <input class="absolute w-full opacity-0" type="file" name="cover" bind:files={$coverImageFile} oninput={onCoverImageChange} multiple={false} accept="image/webp, image/png, image/jpeg" required/>
       </Button>
     </div>
   </div>
