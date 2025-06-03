@@ -35,6 +35,13 @@ async fn get_physical_book(pool: &SqlitePool, id: u32) -> Result<Option<types::P
     }))
 }
 
+pub async fn get_shelves(pool: &SqlitePool) -> Result<Vec<Shelf>, sqlx::Error> {
+    let shelves: Vec<types::Shelf> = sqlx::query_as("
+        SELECT id, name FROM Shelf
+        ").fetch_all(pool).await?;
+    return Ok(shelves);
+}
+
 pub async fn get_shelf(pool: &SqlitePool, id: Option<u32>, name: Option<String>) -> Result<Option<types::Shelf>, sqlx::Error> {
     if let Some(id) = id {
         let shelf: Option<types::Shelf> = sqlx::query_as("

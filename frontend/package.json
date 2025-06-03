@@ -14,7 +14,7 @@
 	"devDependencies": {
 		"@iconify-json/mingcute": "^1.2.3",
 		"@iconify/tailwind": "^1.2.0",
-		"@lucide/svelte": "^0.488.0",
+		"@lucide/svelte": "^0.482.0",
 		"@sveltejs/adapter-auto": "^4.0.0",
 		"@sveltejs/kit": "^2.16.0",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
@@ -36,6 +36,7 @@
 		"zod": "^3.24.3"
 	},
 	"dependencies": {
+		"@internationalized/date": "^3.8.1",
 		"axios": "^1.9.0",
 		"chrono-node": "^2.8.0"
 	}

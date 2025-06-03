@@ -94,3 +94,11 @@ pub async fn get_book(state: Data<AppState>, path: web::Path<(String,)>) -> Resu
         _ => Err(actix_web::error::ErrorNotFound("Book not found")),
     }
 }
+
+#[get("/get-shelves")]
+pub async fn get_shelves(state: Data<AppState>) -> Result<impl Responder> {
+    match database::get_shelves(&state.db).await {
+        Ok(shelves) => Ok(shelves.iter().map(|s| s.name.as_str()).collect::<Vec<_>>().join(",")),
+        _ => Err(actix_web::error::ErrorInternalServerError("Could not retrieve bookshelves"))
+    }
+}

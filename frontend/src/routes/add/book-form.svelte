@@ -5,6 +5,7 @@
   import * as Form from "$lib/components/ui/form/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { bookFormSchema, type FormSchema } from "./book-form-schema";
+  import { languageCodes } from "$lib/utils";
   import {
     type SuperValidated,
     type Infer,
@@ -34,17 +35,6 @@
       coverImageURL = URL.createObjectURL(files[0])
     }
   }
-
-  const availableLanugages = [
-    {
-      value: "en",
-      label: "Engelska"
-    },
-    {
-      value: "sv",
-      label: "Svenska"
-    },
-  ]
 
 </script>
  
@@ -116,7 +106,7 @@
               <div>
                 <DropdownSelector 
                   bind:value={$formData.language} 
-                  items={availableLanugages}
+                  items={languageCodes}
                   name="language"
                   translations={{
                     choose: "Välj ett språk...",
