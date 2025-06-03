@@ -18,7 +18,9 @@ pub struct AppState {
 async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
     let database_url = env::var("DATABASE_URL").unwrap();
 
-    let db_options = SqliteConnectOptions::from_str(&database_url)?.extension("backend/spellfix1");
+    let db_options = SqliteConnectOptions::from_str(&database_url)?
+        .create_if_missing(true)
+        .extension("backend/spellfix1");
 
     let pool = SqlitePool::connect_with(db_options).await?;
 
@@ -48,7 +50,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::get_books)
             .service(routes::register_book)
             .service(routes::add_physical_book)
-            .service(actix_files::Files::new("/book-cover", "./../db/images/book-covers/"))
+            .service(actix_files::Files::new("/book-cover", "./backend/db/images/book-covers/"))
     })
     .bind(("0.0.0.0", 8080))?
     .run()

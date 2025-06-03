@@ -26,7 +26,7 @@ pub async fn register_book(state: Data<AppState>, MultipartForm(form): Multipart
     img.save(format!("./backend/db/images/book-covers/{}.webp", form.json.isbn))
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
 
-    Ok(format!("Shelved {}. Access its cover at '/book-cover/{}'", form.json.title, form.json.isbn))
+    Ok(format!("Shelved {}. Access its cover at '/book-cover/{}.webp'", form.json.title, form.json.isbn))
 }
 
 #[derive(Deserialize)]
@@ -39,7 +39,7 @@ struct ShelfInfo {
 pub async fn add_physical_book(state: Data<AppState>, shelf_data: web::Json<ShelfInfo>) -> actix_web::Result<String> {
     let shelf = database::get_or_create_shelf(&state.db, shelf_data.name.clone()).await
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-    let book = database::get_books(&state.db, None, Some(shelf_data.isbn.clone()), Some(1)).await
+    let book = database::get_books(&state.db, None, Some(shelf_data.isbn.clone()), Some(1), true).await
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?.pop();
     return match (book, shelf) {
         (Some(book), Some(shelf)) => {
@@ -60,12 +60,22 @@ struct MultipleBooksResponse {
 struct BookSearchQueryParams {
     search_str: Option<String>,
     isbn: Option<String>,
-    limit: Option<u32>
+    limit: Option<u32>,
+    has_physical: Option<bool>
 }
 
 #[get("/books")]
 pub async fn get_books(state: Data<AppState>, query: web::Query<BookSearchQueryParams>) -> Result<impl Responder> {
-    match database::get_books(&state.db, query.search_str.clone(), query.isbn.clone(), query.limit).await {
+    let include_non_physical = match query.has_physical {
+        Some(true) => true,
+        _ => false
+    };
+    match database::get_books(&state.db, 
+        query.search_str.clone(), 
+        query.isbn.clone(), 
+        query.limit, 
+        include_non_physical
+        ).await {
         Ok(books) => Ok(web::Json(MultipleBooksResponse { books })),
         _ => Ok(web::Json(MultipleBooksResponse { books: vec![] })),
     }

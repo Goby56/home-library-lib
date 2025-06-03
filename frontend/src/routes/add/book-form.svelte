@@ -23,7 +23,7 @@
     validators: zodClient(bookFormSchema),
   });
  
-  const { form: formData, enhance } = form;
+  const { form: formData, enhance, errors } = form;
 
   const coverImageFile = fileProxy(form, 'cover')
   let coverImageURL = $state(placeHolderImage);
@@ -151,4 +151,4 @@
   </div>
 </form>
 
-	<SuperDebug data={$formData} />
+<SuperDebug data={$formData} />

@@ -1,14 +1,14 @@
-use sqlx::{pool, SqlitePool};
+use sqlx::SqlitePool;
 
 use crate::types::{self, Shelf};
 
 pub async fn get_physical_copies(pool: &SqlitePool, isbn: String) -> Result<(Option<types::Book>, Vec<types::PhysicalBook>), sqlx::Error>  {
-    let book = get_books(pool, None, Some(isbn), Some(1)).await?.pop(); 
+    let book = get_books(pool, None, Some(isbn), Some(1), true).await?.pop(); 
     // Vec should be length 0 or 1 so pop will give that element
                                                         
     let mut physical_copies = vec![];
     if let Some(b) = &book {
-        for copy_id in &b.copies {
+        for copy_id in &b.copy_ids {
             if let Some(copy) = get_physical_book(pool, *copy_id).await? {
                 physical_copies.push(copy); 
             }
@@ -134,25 +134,31 @@ pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<u32, sq
     Ok(book_id)
 }
 
-pub async fn get_books(pool: &SqlitePool, _search_str: Option<String>, isbn: Option<String>, limit: Option<u32>) -> Result<Vec<types::Book>, sqlx::Error>{
-    let mut sq = String::from(r#"
+pub async fn get_books(pool: &SqlitePool, _search_str: Option<String>, 
+    isbn: Option<String>, limit: Option<u32>,
+    include_non_physical: bool) 
+    -> Result<Vec<types::Book>, sqlx::Error>{
+    let mut sq = format!(r#"
         SELECT 
             Book.id,
             Book.title,
             Book.isbn,
-            GROUP_CONCAT(DISTINCT Author.name, ',') AS authors,
+            GROUP_CONCAT(DISTINCT Author.name) AS authors,
             Book.publication_year,
-            GROUP_CONCAT(DISTINCT Genre.name, ',') AS genres,
+            GROUP_CONCAT(DISTINCT Genre.name) AS genres,
             Book.page_count,
             Book.language,
-            GROUP_CONCAT(DISTINCT PhysicalBook.id, ',') as copies,
+            GROUP_CONCAT(DISTINCT PhysicalBook.id) as copies
         FROM Book
-        JOIN PhysicalBook ON Book.id = PhysicalBook.book
+        {}JOIN PhysicalBook ON Book.id = PhysicalBook.book
         JOIN BookContribution ON Book.id = BookContribution.book
         JOIN Author ON BookContribution.author = Author.id
         JOIN GenreMatch ON Book.id = GenreMatch.book
         JOIN Genre ON GenreMatch.genre = Genre.id
-        "#);
+        "#, match include_non_physical {
+                true => "LEFT ",
+                false => ""
+            });
 
     if isbn.is_some() {
         sq.push_str(" WHERE Book.isbn = ?");
@@ -173,8 +179,8 @@ pub async fn get_books(pool: &SqlitePool, _search_str: Option<String>, isbn: Opt
     if let Some(limit) = limit {
         query = query.bind(limit);
     }
-    let books: Vec<(u32, String, String, String, i16, String, u16, String, String)> = query.fetch_all(pool).await?;
-
+    let books: Vec<(u32, String, String, String, i16, String, u16, String, Option<String>)> = query.fetch_all(pool).await?;
+    
     return Ok(books.into_iter().map(|b| {
         types::Book {
             id: b.0,
@@ -185,7 +191,10 @@ pub async fn get_books(pool: &SqlitePool, _search_str: Option<String>, isbn: Opt
             genres: b.5.split(",").map(|s| s.to_string()).collect(),
             page_count: b.6,
             language: b.7,
-            copies: b.8.split(",").map(|s| s.parse::<u32>().unwrap()).collect(),
+            copy_ids: match b.8 {
+                Some(s) => s.split(",").filter_map(|s| s.trim().parse::<u32>().ok()).collect(),
+                None => vec![]
+            }
     }
 
     }).collect())

@@ -5,12 +5,11 @@ CREATE TABLE "Author" (
 );
 CREATE TABLE "Book" (
 	"id"	INTEGER NOT NULL UNIQUE,
-	"isbn"	TEXT NOT NULL,
+	"isbn"	TEXT NOT NULL UNIQUE,
 	"title"	TEXT NOT NULL,
 	"publication_year"	INTEGER NOT NULL,
 	"page_count"	INTEGER NOT NULL,
 	"language"	TEXT NOT NULL,
-    "date_added" TEXT DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 CREATE TABLE "PhysicalBook" (
@@ -27,6 +26,18 @@ CREATE TABLE "BookContribution" (
 	"author"	INTEGER,
 	UNIQUE("book","author"),
 	FOREIGN KEY("author") REFERENCES "Author"("id"),
+	FOREIGN KEY("book") REFERENCES "Book"("id")
+);
+CREATE TABLE "Genre" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"name"	TEXT NOT NULL UNIQUE,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+CREATE TABLE "GenreMatch" (
+	"book"	INTEGER,
+	"genre"	INTEGER,
+	UNIQUE("book","genre"),
+	FOREIGN KEY("genre") REFERENCES "Genre"("id"),
 	FOREIGN KEY("book") REFERENCES "Book"("id")
 );
 CREATE TABLE "Reservation" (

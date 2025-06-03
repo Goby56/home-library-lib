@@ -39,12 +39,12 @@ pub struct Book {
     pub genres: Vec<String>,
     pub page_count: u16,
     pub language: String,
-    pub copies: Vec<u32>
+    pub copy_ids: Vec<u32>
 }
 
 #[derive(serde::Serialize)]
 pub struct PhysicalBook {
     pub id: u32,
     pub shelf: Shelf,
-    pub reservation: Option<ReservationStatus>
+    pub reservation: Option<ReservationStatus>,
 }
