@@ -11,7 +11,7 @@ export function getLabelFromLanguageCode(code: string): string | undefined {
 }
 
 export const languageCodes = [
-    { label: "Svenska", value: "se" },
+    { label: "Svenska", value: "sv" },
     { label: "Engelska", value: "en" },
     { label: "Franska", value: "fr" },
     { label: "Tyska", value: "de" },

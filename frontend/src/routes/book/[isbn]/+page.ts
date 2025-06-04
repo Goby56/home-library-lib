@@ -4,7 +4,7 @@ import { error } from "@sveltejs/kit";
 
 import placeHolderImage from "$lib/assets/placeholder_image.webp";
 
-export const load: PageLoad = async ({ params }) => {
+export const load: PageLoad = async ({ fetch, params }) => {
     let bookResponse = await fetch("http://192.168.1.223:8080/book/" + params.isbn)
     let coverImage = "http://192.168.1.223:8080/book-cover/" + params.isbn + ".webp";
     if (bookResponse.ok) {

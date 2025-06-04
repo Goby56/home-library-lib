@@ -3,13 +3,6 @@
   import BookForm from "./book-form.svelte";
   let { data, form }: PageProps = $props();
 
-  import { toast } from "svelte-sonner";
-
-  $effect(() => {
-    if (form?.response?.success) {
-      toast(form.response.message)
-    }
-	});
 </script>
 
 <h2
