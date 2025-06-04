@@ -6,12 +6,17 @@
   import { RangeCalendar } from "$lib/components/ui/range-calendar/index.js";
   import * as Popover from "$lib/components/ui/popover/index.js";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
+  import AddToShelfIcon from "@lucide/svelte/icons/between-horizontal-start";
+  import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
 
   import CheckIcon from "@lucide/svelte/icons/check";
   import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
   import { tick } from "svelte";
   import * as Command from "$lib/components/ui/command/index.js";
   import { cn } from "$lib/utils.js";
+  import { buttonVariants } from "$lib/components/ui/button/index.js";
+  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import axios from "axios";
 
   import { languageCodes, getLabelFromLanguageCode } from "$lib/utils";
   import BookingButtom from "$lib/components/BookingButton.svelte";
@@ -20,13 +25,12 @@
 
 
   let book = data.book, book_copies = data.copies, coverImage = data.cover;
-  let shelves = data.shelves;
+  let shelves = $state(data.shelves);
 
   let shelfPopupOpen = $state(false);
   let selectedShelf = $state("");
-  let shelfInput = $state("");
   let triggerRef = $state<HTMLButtonElement>(null!);
- 
+
   // We want to refocus the trigger button when the user selects
   // an item from the list so users can continue navigating the
   // rest of the form with the keyboard.
@@ -35,6 +39,32 @@
     tick().then(() => {
       triggerRef.focus();
     });
+  }
+
+  let shelfInput = $state("");
+
+  function createShelf() {
+    if (shelfInput != "") {
+      shelves.push(shelfInput.trim().toLocaleUpperCase());
+    }
+  }
+
+  let pendingAddToShelf = $state(false);
+
+  async function addToShelf() {
+    if (selectedShelf != "") {
+      pendingAddToShelf = true;
+      
+      let physical_copy = {
+          isbn: book.isbn, name: selectedShelf
+      }
+      let response = await axios.post("http://192.168.1.223:8080/add_physical_book", physical_copy);
+      console.log(response);
+
+      pendingAddToShelf = false;
+      
+      // location.reload();
+    }
   }
 </script>
 
@@ -59,13 +89,36 @@
         <Popover.Root bind:open={shelfPopupOpen}>
           <Popover.Trigger bind:ref={triggerRef}>
             {#snippet child({ props })}
-              <Button
-                {...props}
-                role="combobox"
-                aria-expanded={shelfPopupOpen}
-              >
-                {selectedShelf || "Tilldela bokhylla"}
-              </Button>
+              <div class="flex">
+                <Button
+                  {...props}
+                  class={selectedShelf ? 'w-[160px] rounded-r-none' : 'w-[200px]'}
+                  role="combobox"
+                  aria-expanded={shelfPopupOpen}
+                >
+                  {selectedShelf || "Tilldela bokhylla"}
+                </Button>
+                {#if selectedShelf}
+                  <Tooltip.Provider>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger>
+                        {#if pendingAddToShelf}
+                          <Button disabled variant="outline" class="rounded-l-none">
+                            <LoaderCircleIcon class="animate-spin" />
+                          </Button>
+                        {:else} 
+                          <Button onclick={addToShelf} variant="outline" class="rounded-l-none" size="icon">
+                            <AddToShelfIcon />
+                          </Button>
+                        {/if}
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        <p>Tilldela bokhylla</p>
+                      </Tooltip.Content>
+                    </Tooltip.Root>
+                  </Tooltip.Provider>
+                {/if}
+              </div>
             {/snippet}
           </Popover.Trigger>
           <Popover.Content class="w-[200px] p-0">
@@ -74,7 +127,9 @@
               <Command.List>
                 <Command.Empty class="flex flex-col p-1 gap-1">
                   <p>Ingen bokhylla hittades</p>
-                  <Button variant="outline"> Lägg till {shelfInput.toUpperCase()}</Button>
+                  {#if shelfInput != ""}
+                    <Button onclick={createShelf} variant="outline"> Skapa {shelfInput.toUpperCase()}</Button>
+                  {/if}
                 </Command.Empty>
                 <Command.Group class="p-0" value="shelves">
                   {#each shelves as shelf}
@@ -96,14 +151,11 @@
             </Command.Root>
           </Popover.Content>
         </Popover.Root>
-
-
-
           {#if book_copies.length == 0}
             <p>Denna bok tillhör ännu inte någon bokhylla</p>
           {/if}
           {#each book_copies as physical_copy}
-            <BookingButtom physical_copy={physical_copy}/>
+            <BookingButtom book={book} physicalCopy={physical_copy}/>
           {/each}
         </div>
         </div>

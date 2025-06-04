@@ -43,7 +43,8 @@ pub async fn add_physical_book(state: Data<AppState>, shelf_data: web::Json<Shel
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?.pop();
     return match (book, shelf) {
         (Some(book), Some(shelf)) => {
-            let _ = database::create_physical_book(&state.db, book.id, shelf.id).await;
+            database::create_physical_book(&state.db, book.id, shelf.id).await
+                .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
             Ok(format!("Added a physical copy of {} to shelf {}", book.title, shelf.name))
         },
         _ => Err(actix_web::error::ErrorNotFound("Couldn't find book or create shelf")),
@@ -61,12 +62,12 @@ struct BookSearchQueryParams {
     search_str: Option<String>,
     isbn: Option<String>,
     limit: Option<u32>,
-    has_physical: Option<bool>
+    include_non_physical: Option<bool>
 }
 
 #[get("/books")]
 pub async fn get_books(state: Data<AppState>, query: web::Query<BookSearchQueryParams>) -> Result<impl Responder> {
-    let include_non_physical = match query.has_physical {
+    let include_non_physical = match query.include_non_physical {
         Some(true) => true,
         _ => false
     };

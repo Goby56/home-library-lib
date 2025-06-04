@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import placeHolderImage from "$lib/assets/placeholder_image.webp";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -21,3 +22,13 @@ export const languageCodes = [
     { label: "Koreanska", value: "ko" },
     { label: "Kinesiska", value: "zh" }
 ];
+
+
+export async function getCoverImage(isbn: string) {
+    let coverImage = "http://192.168.1.223:8080/book-cover/" + isbn + ".webp";
+    coverImage = await fetch(coverImage, { method: "HEAD" })
+        .then(res => res.ok ? coverImage : placeHolderImage)
+        .catch(_ => placeHolderImage)
+    return coverImage;
+}
+
