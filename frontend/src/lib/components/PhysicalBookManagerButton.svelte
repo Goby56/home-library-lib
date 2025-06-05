@@ -56,7 +56,6 @@
       let edit_data = {
           copy_id: physicalCopy.id, new_shelf_name: selectedShelf
       }
-      console.log(physicalCopy.id, selectedShelf)
       let response = await axios.post("http://192.168.1.223:8080/edit_physical_book", edit_data);
 
       pendingShelfChange = false;
@@ -77,7 +76,6 @@
 
     pendingRemoval = false;
   }
-
 
 </script>
 
@@ -193,8 +191,6 @@
       </div>
     </Tabs.Content>
   </Tabs.Root>
-
-
 </Popover.Content>
 </Popover.Root>
 

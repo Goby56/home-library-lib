@@ -117,7 +117,6 @@
             {/snippet}
           </Form.Control>
           <Form.Description>
-            Om språket inte finns, be Kalle att lägga till det.
 	      	</Form.Description>
         </Form.Field>
       </div>

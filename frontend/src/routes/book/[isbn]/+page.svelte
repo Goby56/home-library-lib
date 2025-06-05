@@ -61,6 +61,9 @@
       invalidateAll();
     }
   }
+
+  export const hydrate = false;
+
 </script>
 
 <div class="flex flex-col">
