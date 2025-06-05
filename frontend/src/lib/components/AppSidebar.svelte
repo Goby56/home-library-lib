@@ -5,6 +5,7 @@
   import Search from "@lucide/svelte/icons/search";
   import Settings from "@lucide/svelte/icons/settings";
   import Sailboat from "@lucide/svelte/icons/sailboat";
+  import ChartColumnStacked from "@lucide/svelte/icons/chart-column-stacked";
   import Library from "@lucide/svelte/icons/library";
   import Film from "@lucide/svelte/icons/film";
   import User from "@lucide/svelte/icons/user";
@@ -56,14 +57,19 @@
       icon: Plus,
     },
     {
-      title: "Mina sidor",
-      url: "#",
-      icon: User,
+      title: "Hyllor",
+      url: "/shelves",
+      icon: ChartColumnStacked,
     },
     {
       title: "Kalender",
       url: "/calendar",
       icon: Calendar,
+    },
+    {
+      title: "Mina sidor",
+      url: "#",
+      icon: User,
     },
     {
       title: "Inställningar",
@@ -73,7 +79,9 @@
   ]
 </script>
 
+<!--
 <svelte:window onpointermove={proximitySidebarTrigger}/>
+-->
 
 <!--
 <div class="fixed left-0 bottom-1/2 bg-primary">

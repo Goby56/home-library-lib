@@ -50,6 +50,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::get_books)
             .service(routes::register_book)
             .service(routes::add_physical_book)
+            .service(routes::edit_physical_book)
             .service(routes::get_shelves)
             .service(actix_files::Files::new("/book-cover", "./backend/db/images/book-covers/"))
     })

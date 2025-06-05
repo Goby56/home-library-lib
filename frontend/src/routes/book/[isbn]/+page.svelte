@@ -21,7 +21,8 @@
   import axios from "axios";
 
   import { languageCodes, getLabelFromLanguageCode } from "$lib/utils";
-  import BookingButtom from "$lib/components/BookingButton.svelte";
+  import PhysicalBookManagerButton from "$lib/components/PhysicalBookManagerButton.svelte";
+    import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
  
 	let { data }: PageProps = $props();
 
@@ -43,12 +44,6 @@
   }
 
   let shelfInput = $state("");
-
-  function createShelf() {
-    if (shelfInput != "") {
-      shelves.push(shelfInput.trim().toLocaleUpperCase());
-    }
-  }
 
   let pendingAddToShelf = $state(false);
 
@@ -91,7 +86,7 @@
           {/if}
           <div class="flex gap-3 items-center">
             {#each data.copies as physical_copy}
-              <BookingButtom book={data.book} physicalCopy={physical_copy}/>
+              <PhysicalBookManagerButton book={data.book} physicalCopy={physical_copy} shelves={shelves}/>
             {/each}
 
             <Popover.Root bind:open={shelfPopupOpen}>
@@ -107,6 +102,7 @@
                     >
                     {#if selectedShelf}
                       {selectedShelf}
+                      <ChevronsUpDownIcon/>
                     {:else if data.copies.length == 0}
                       Placera i bokylla
                     {:else}
@@ -138,13 +134,10 @@
               </Popover.Trigger>
               <Popover.Content class="w-[200px] p-0">
                 <Command.Root>
-                  <Command.Input bind:value={shelfInput} placeholder="Lägg bok i bokhylla..." />
+                  <Command.Input placeholder="Sök efter bokhyllor..." />
                   <Command.List>
                     <Command.Empty class="flex flex-col p-1 gap-1">
-                      <p>Ingen bokhylla hittades</p>
-                      {#if shelfInput != ""}
-                        <Button onclick={createShelf} variant="outline"> Skapa {shelfInput.toUpperCase()}</Button>
-                      {/if}
+                      <p>Bokhyllan hittades inte</p>
                     </Command.Empty>
                     <Command.Group class="p-0" value="shelves">
                       {#each shelves as shelf}

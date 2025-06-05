@@ -35,6 +35,25 @@ async fn get_physical_book(pool: &SqlitePool, id: u32) -> Result<Option<types::P
     }))
 }
 
+pub async fn move_physical_book(pool: &SqlitePool, id: u32, new_shelf: String) -> Result<Option<u32>, sqlx::Error> {
+    let shelf: Option<Shelf> = get_or_create_shelf(pool, new_shelf.clone()).await?;
+    if let Some(shelf) = shelf {
+        sqlx::query("
+            UPDATE PhysicalBook
+            SET shelf = ?
+            WHERE id = ?").bind(shelf.id).bind(id).execute(pool).await?;
+        return Ok(Some(shelf.id))
+    }
+    Ok(None)
+}
+
+pub async fn remove_physical_book(pool: &SqlitePool, id: u32) -> Result<(), sqlx::Error> {
+    sqlx::query("
+        DELETE FROM PhysicalBook
+        WHERE id = ?").bind(id).execute(pool).await?;
+    Ok(())
+}
+
 pub async fn get_shelves(pool: &SqlitePool) -> Result<Vec<Shelf>, sqlx::Error> {
     let shelves: Vec<types::Shelf> = sqlx::query_as("
         SELECT id, name FROM Shelf

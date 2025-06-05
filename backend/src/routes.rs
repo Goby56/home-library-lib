@@ -1,4 +1,4 @@
-use std::io::BufReader;
+use std::{io::BufReader, path};
 use image::{self, ImageReader};
 
 use actix_web::{get, post, web::{self, Data}, Responder, Result,};
@@ -50,6 +50,31 @@ pub async fn add_physical_book(state: Data<AppState>, shelf_data: web::Json<Shel
         _ => Err(actix_web::error::ErrorNotFound("Couldn't find book or create shelf")),
     };
 }
+
+
+#[derive(Deserialize)]
+struct EditPhysicalBookData {
+    copy_id: u32,
+    new_shelf_name: String
+}
+
+#[post("/edit_physical_book")] 
+pub async fn edit_physical_book(state: Data<AppState>, edit_data: web::Json<EditPhysicalBookData>) -> Result<impl Responder> {
+    // Can remove phyiscal book if new shelf name is left blank
+    if edit_data.new_shelf_name == "" {
+        match database::remove_physical_book(&state.db, edit_data.copy_id).await {
+            Ok(_) => Ok(format!("Removed physical copy {}", edit_data.copy_id)),
+            Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+        }
+    } else {
+        match database::move_physical_book(&state.db, edit_data.copy_id, edit_data.new_shelf_name.clone()).await {
+            Ok(Some(shelf_id)) => Ok(format!("Moved physical copy {} to shelf {} ({})", edit_data.copy_id, edit_data.new_shelf_name, shelf_id)),
+            Ok(None) => Err(actix_web::error::ErrorInternalServerError(format!("Could not find shelf {}", edit_data.new_shelf_name))),
+            Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+        }
+    }
+}
+
 
 #[derive(serde::Serialize)]
 #[serde(transparent)]

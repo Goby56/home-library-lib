@@ -16,7 +16,7 @@ CREATE TABLE "PhysicalBook" (
 	"id"	INTEGER NOT NULL UNIQUE,
     "book" INTEGER NOT NULL,
 	"shelf"	INTEGER NOT NULL,
-	"reservation"	INTEGER,
+	"reservation"	INTEGER UNIQUE,
 	PRIMARY KEY("id" AUTOINCREMENT)
 	FOREIGN KEY("book") REFERENCES "Book"("id"),
 	FOREIGN KEY("reservation") REFERENCES "Reservation"("id"),
