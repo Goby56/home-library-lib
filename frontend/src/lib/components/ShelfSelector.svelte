@@ -40,8 +40,6 @@
     });
   }
 
-  let shelfInput = $state("");
-
   let pendingAction = $state(false);
 
   async function performAction() {
@@ -68,7 +66,7 @@
             {...props}
             class={value ? "rounded-r-none" : ""}
             role="combobox"
-            variant={value ? "secondary" : "default"}
+            variant="secondary"
             aria-expanded={shelfPopupOpen}
           >
             {#if value}
@@ -122,7 +120,7 @@
         <Button
           class={value ? "rounded-r-none" : ""}
           role="combobox"
-          variant={value ? "secondary" : "default"}
+          variant="secondary"
           aria-expanded={shelfPopupOpen}
         >
           {#if value}
