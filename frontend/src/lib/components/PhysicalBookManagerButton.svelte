@@ -12,6 +12,7 @@
 
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import ShelfSelector from './ShelfSelector.svelte';
+    import { reserveBook } from '$lib/utils';
 
   let { physicalCopy, book, shelves } = $props();
  
@@ -56,6 +57,18 @@
     pendingRemoval = false;
   }
 
+
+  let pendingReservation = $state(false);
+
+  async function reserve() {
+    pendingReservation = true;
+    let response = await reserveBook(physicalCopy.id, reservationDates.start, reservationDates.end);
+  
+    invalidateAll();
+  
+    pendingReservation = false;
+  }
+
   const isDesktop = new MediaQuery("(min-width: 768px)");
 
 </script>
@@ -75,7 +88,7 @@
         <RangeCalendar bind:value={reservationDates} class="" />
         <div class="flex flex-col gap-2 items-center">
           {#if reservationDuration}
-            <Button>Reservera</Button>
+            <Button onclick={reserve}>Reservera</Button>
             <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{book.title}</b> på hyllan {physicalCopy.shelf.name} i <u>{reservationDuration} dagar</u></p>
           {:else}   
             <Button disabled>Reservera</Button>

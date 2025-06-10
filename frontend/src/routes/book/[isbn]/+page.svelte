@@ -2,7 +2,7 @@
 	import type { PageProps } from './$types';
   import { MediaQuery } from "svelte/reactivity";
   import PhysicalBookManagerButton from '$lib/components/PhysicalBookManagerButton.svelte';
-  import { languageCodes, getLabelFromLanguageCode } from "$lib/utils";
+  import { reserveBook, getLabelFromLanguageCode } from "$lib/utils";
   import * as Drawer from "$lib/components/ui/drawer/index.js";
   import { buttonVariants } from "$lib/components/ui/button/index.js";
   import Button from "$lib/components/ui/button/button.svelte";
@@ -18,6 +18,7 @@
   import { tick } from "svelte";
   import axios from "axios";
   import { cn } from "$lib/utils.js";
+    import PhysicalBookSelector from './PhysicalBookSelector.svelte';
  
 	let { data }: PageProps = $props();
 
@@ -51,9 +52,18 @@
     return null;
   })
 
-  async function reserve(shelf: string) {
+  let selectedCopy: any = $state(undefined);
 
+  let pendingReservation = $state(false);
+  async function reserve() {
+    if (selectedCopy == null) {
+      return
+    }
+    pendingReservation = true;
+    let response = await reserveBook(selectedCopy.id, reservationDates.start, reservationDates.end);
+    pendingReservation = false;
   }
+
 </script>
 
 <div class="flex flex-col mb-20">
@@ -128,33 +138,27 @@
 
       <RangeCalendar bind:value={reservationDates} />
       <div class="flex flex-col gap-2 items-center">
-          
-          <ShelfSelector bind:value={selectedShelf} action={reserve} shelves={data.shelves}>
-            {#snippet actionTrigger(performAction)}
-              {#if reservationDuration}
-                <Button onclick={performAction} class="rounded-l-none">Reservera</Button>
-              {:else}   
-                <Button disabled class="rounded-l-none">Reservera</Button>
-              {/if}
-            {/snippet}
-            {#snippet noShelfSelected()}
-              Välj bokhylla
-            {/snippet}
-          </ShelfSelector>
+        
+        <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
 
-        {#if reservationDuration && selectedShelf}
-          <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{data.book.title}</b> på hyllan {selectedShelf} i <u>{reservationDuration} dagar</u></p>
+        {#if reservationDuration && selectedCopy}
+          <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{data.book.title}</b> på hyllan {selectedCopy.shelf.name} i <u>{reservationDuration} dagar</u></p>
         {:else}
           {#if !reservationDuration}
             <p class="text-center text-muted-foreground text-sm px-2">Ange två datum som du vill reservera boken mellan</p>
           {/if}
-          {#if !selectedShelf}   
+          {#if !selectedCopy}   
             <p class="text-center text-muted-foreground text-sm px-2">Välj vilken bokhylla du vill låna boken från</p>
           {/if}
         {/if}
       </div>
 
       <Drawer.Footer class="w-full bottom-0">
+        {#if reservationDuration && selectedCopy}
+          <Button onclick={reserve}>Reservera</Button>
+        {:else}
+          <Button disabled>Reservera</Button>
+        {/if}
         <Drawer.Close class={buttonVariants({ variant: "outline" })}>
           Tillbaka
         </Drawer.Close>

@@ -47,7 +47,8 @@ CREATE TABLE "Reservation" (
 	"timestamp"	TEXT DEFAULT CURRENT_TIMESTAMP,
     "start_date" TEXT NOT NULL,
     "end_date" TEXT NULL,
-	PRIMARY KEY("id" AUTOINCREMENT)
+	PRIMARY KEY("id" AUTOINCREMENT),
+    FOREIGN KEY("user") REFERENCES "User"("id")
 );
 CREATE TABLE "Shelf" (
 	"id"	INTEGER NOT NULL UNIQUE,

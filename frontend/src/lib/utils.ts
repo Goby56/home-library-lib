@@ -1,6 +1,8 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import placeHolderImage from "$lib/assets/placeholder_image.webp";
+import axios from "axios";
+import type { CalendarDate } from "@internationalized/date";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -30,5 +32,14 @@ export async function getCoverImage(isbn: string) {
         .then(res => res.ok ? coverImage : placeHolderImage)
         .catch(_ => placeHolderImage)
     return coverImage;
+}
+
+export async function reserveBook(copyId: number, start: CalendarDate, end: CalendarDate) {
+    let reservationData = {
+        copy_id: copyId,
+        start: start.toString(),
+        end: end.toString(),
+    } 
+    return axios.post("http://192.168.1.223:8080/reserve_physical_book", reservationData);
 }
 

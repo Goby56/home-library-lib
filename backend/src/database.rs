@@ -54,6 +54,12 @@ pub async fn remove_physical_book(pool: &SqlitePool, id: u32) -> Result<(), sqlx
     Ok(())
 }
 
+// pub async fn reserve_physical_book(pool: &SqlitePool, id: u32, start_date: String, end_date: String) -> Result<(), sqlx::Error> {
+//     let reservation_id: Option<u32> = sqlx::query_scalar("
+//         INSERT INTO Reservation
+//         ")
+// }
+
 pub async fn get_shelves(pool: &SqlitePool) -> Result<Vec<Shelf>, sqlx::Error> {
     let shelves: Vec<types::Shelf> = sqlx::query_as("
         SELECT id, name FROM Shelf

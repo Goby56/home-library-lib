@@ -75,6 +75,21 @@ pub async fn edit_physical_book(state: Data<AppState>, edit_data: web::Json<Edit
     }
 }
 
+// #[derive(Deserialize)]
+// struct ReservationData {
+//     copy_id: u32,
+//     new_shelf_name: String
+// }
+//
+// #[post("/reserve_physical_book")] 
+// pub async fn reserve_physical_book(state: Data<AppState>, reservation_data: web::Json<ReservationData>) -> Result<impl Responder> {
+//     match database::move_physical_book(&state.db, edit_data.copy_id, edit_data.new_shelf_name.clone()).await {
+//         Ok(Some(shelf_id)) => Ok(format!("Moved physical copy {} to shelf {} ({})", edit_data.copy_id, edit_data.new_shelf_name, shelf_id)),
+//         Ok(None) => Err(actix_web::error::ErrorInternalServerError(format!("Could not find shelf {}", edit_data.new_shelf_name))),
+//         Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+//     }
+// }
+
 
 #[derive(serde::Serialize)]
 #[serde(transparent)]
