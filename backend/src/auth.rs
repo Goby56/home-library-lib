@@ -2,6 +2,7 @@ use rand::{rngs::OsRng, TryRngCore};
 use sha2::{Digest, Sha256};
 use sqlx::SqlitePool;
 use time::{Duration, OffsetDateTime};
+use hex;
 
 // Human readable alphabet (a-z, 0-9 without l, o, 0, 1 to avoid confusion)
 const READABLE_ALPHABET: &[u8] = b"abcdefghijkmnpqrstuvwxyz23456789";
@@ -9,8 +10,8 @@ const READABLE_ALPHABET: &[u8] = b"abcdefghijkmnpqrstuvwxyz23456789";
 #[derive(sqlx::FromRow, serde::Serialize)]
 pub struct Session {
     id: String,
-    secret_hash: Vec<u8>,
-    created_at: OffsetDateTime,
+    secret_hash: String,
+    created_at: i64,
     user: u32
 }
 
@@ -26,22 +27,22 @@ fn gen_secure_random_str() -> Option<String> {
 }
 
 pub async fn create_session(pool: &SqlitePool, user_id: u32) -> Result<Option<(Session, String)>, sqlx::Error> {
-    let now = OffsetDateTime::now_utc(); 
+    let now = OffsetDateTime::now_utc().unix_timestamp(); 
     let (id, secret) = match (gen_secure_random_str(), gen_secure_random_str()) {
         (Some(id), Some(secret)) => (id, secret),
         _ => return Ok(None)
     };
-    let secret_hash = Sha256::digest(secret.clone()).to_vec();
+    let secret_hash = hex::encode(Sha256::digest(secret.clone()));
 
     let token = id.clone() + "." + &secret;
 
     let session = Session {
         id: id.clone(), secret_hash: secret_hash.clone(), created_at: now, user: user_id
     };
-
+    
     sqlx::query("
-        INSERT INTO Session (id, secret_hash, user) 
-        VALUES (?, ?, ?)").bind(id).bind(secret_hash).bind(user_id)
+        INSERT INTO Session (id, secret_hash, created_at, user)
+        VALUES (?, ?, ?, ?)").bind(id).bind(secret_hash).bind(now).bind(user_id)
         .execute(pool).await?;
     
     return Ok(Some((session, token)));
@@ -57,8 +58,10 @@ pub async fn validate_session(pool: &SqlitePool, token: String) -> Result<Option
 
     if let Some(session) = session {
         let token_secret_hash = Sha256::digest(secret).to_vec();
-        if eq_hashes(token_secret_hash, session.secret_hash.clone()) {
-            return Ok(Some(session));
+        if let Ok(db_secret_hash) = hex::decode(session.secret_hash.clone()) {
+            if eq_hashes(token_secret_hash, db_secret_hash) {
+                return Ok(Some(session));
+            }
         }
     }
 
@@ -79,13 +82,18 @@ fn eq_hashes(hash1: Vec<u8>, hash2: Vec<u8>) -> bool {
 
 
 async fn get_session(pool: &SqlitePool, session_id: String) -> Result<Option<Session>, sqlx::Error> {
-    let now = OffsetDateTime::now_utc(); 
-    let session: Session = sqlx::query_as("
+    let now = OffsetDateTime::now_utc().unix_timestamp(); 
+    
+    let session: Option<Session> = sqlx::query_as("
         SELECT id, secret_hash, created_at, user
         FROM Session
-        WHERE id = ?").bind(&session_id).fetch_one(pool).await?;
+        WHERE id = ?").bind(&session_id).fetch_optional(pool).await?;
     
-    if now.le(&session.created_at.saturating_add(Duration::days(7))) {
+    let Some(session) = session else {
+        return Ok(None);
+    };
+
+    if now - session.created_at < Duration::days(7).whole_seconds() {
         return Ok(Some(session));
     } else {
         delete_session(pool, session_id).await?;

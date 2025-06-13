@@ -10,7 +10,7 @@ use actix_cors::Cors;
 use actix_web::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::http;
-use actix_web::middleware;
+use actix_web::middleware::{self, Logger};
 use actix_web::{web::Data, App, HttpServer};
 use actix_files;
 use sqlx::{sqlite::SqliteConnectOptions, Pool, Sqlite, SqlitePool};
@@ -23,10 +23,12 @@ async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
     let database_url = env::var("DATABASE_URL").unwrap();
 
     let db_options = SqliteConnectOptions::from_str(&database_url)?
-        .create_if_missing(true)
-        .extension("backend/spellfix1");
+        .create_if_missing(true);
+        //.extension("backend/spellfix1");
 
     let pool = SqlitePool::connect_with(db_options).await?;
+
+    sqlx::query("PRAGMA foreign_keys = ON;").execute(&pool).await?;
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
@@ -42,8 +44,12 @@ async fn session_middleware(
     if path == "/login_user" || path == "/register_user" {
         return next.call(req).await;
     }
-    if let Some(session_token) = req.cookie("session-token") {
-        return match auth::validate_session(&state.db, session_token.to_string()).await {
+    if let Some(cookie) = req.cookie("session-token") {
+        let session_token = cookie.to_string();
+        let Some(token) = session_token.strip_prefix("session-token=") else {
+            return Err(actix_web::error::ErrorUnauthorized("Could not parse session token"));
+        };
+        return match auth::validate_session(&state.db, token.to_string()).await {
             Ok(Some(_session)) => next.call(req).await,
             Ok(None) => Err(actix_web::error::ErrorUnauthorized("Session token unauthorized")),
             Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
@@ -68,6 +74,7 @@ async fn main() -> std::io::Result<()> {
             .max_age(3600);
 
         App::new()
+            .wrap(Logger::default())
             .wrap(cors)
             .wrap(middleware::from_fn(session_middleware))
             .app_data(Data::new(AppState { db: pool.clone() }))

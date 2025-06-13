@@ -4,7 +4,7 @@ import { superValidate } from "sveltekit-superforms";
 import { userCredentialsSchema } from "./../user-credentials-schema.js";
 import { zod } from "sveltekit-superforms/adapters";
 import axios from "axios";
-import { BACKEND_URL } from "$lib/utils.js";
+import { BACKEND_URL, setSessionCookie } from "$lib/utils.js";
  
 export const load: PageServerLoad = async () => {
  return {
@@ -37,13 +37,7 @@ export const actions: Actions = {
     }
 
     if (response.status == 200) {
-        event.cookies.set("session-token", response.data, {
-            path: "/",
-            httpOnly: true,
-            secure: false, // TODO Change to true when switched to HTTPS
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7
-        })
+        setSessionCookie(event.cookies, response.data);
         redirect(303, "/");
     }
 

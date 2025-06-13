@@ -1,18 +1,18 @@
 
-use serde::Serialize;
+// use serde::Serialize;
 use time::PrimitiveDateTime;
 
-pub trait Item {
-    fn item_type() -> ItemType;
+// pub trait Item {
+//     fn item_type() -> ItemType;
+// 
+//     fn data<T: Serialize>() -> T;
+//     
+//     fn status() -> ReservationStatus;
+// }
 
-    fn data<T: Serialize>() -> T;
-    
-    fn status() -> ReservationStatus;
-}
-
-pub enum ItemType {
-    Book
-}
+// pub enum ItemType {
+//     Book
+// }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
 pub struct ReservationStatus {
