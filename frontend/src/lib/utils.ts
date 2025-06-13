@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge";
 import placeHolderImage from "$lib/assets/placeholder_image.webp";
 import axios from "axios";
 import type { CalendarDate } from "@internationalized/date";
+import type { Cookies } from "@sveltejs/kit";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -25,21 +26,31 @@ export const languageCodes = [
     { label: "Kinesiska", value: "zh" }
 ];
 
+export const BACKEND_URL = "http://192.168.1.223:8080";
+
+export async function backendPOST(cookies: Cookies, endpoint: string, payload: any) {
+    const sessionToken = cookies.get("session-token");
+    return await axios.post(BACKEND_URL + endpoint, payload, {
+        headers: {
+            Cookie: `session-token=${sessionToken}`
+        }
+    })
+}
+
+export function setSessionCookie(cookies: Cookies, session: any) {
+    cookies.set("session-token", session, {
+        path: "/",
+        httpOnly: true,
+        secure: false, // TODO Change to true when switched to HTTPS
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7
+    })
+}
 
 export async function getCoverImage(isbn: string) {
-    let coverImage = "http://192.168.1.223:8080/book-cover/" + isbn + ".webp";
+    let coverImage = BACKEND_URL + "/book_cover/" + isbn + ".webp";
     coverImage = await fetch(coverImage, { method: "HEAD" })
         .then(res => res.ok ? coverImage : placeHolderImage)
         .catch(_ => placeHolderImage)
     return coverImage;
 }
-
-export async function reserveBook(copyId: number, start: CalendarDate, end: CalendarDate) {
-    let reservationData = {
-        copy_id: copyId,
-        start: start.toString(),
-        end: end.toString(),
-    } 
-    return axios.post("http://192.168.1.223:8080/reserve_physical_book", reservationData);
-}
-

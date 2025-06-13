@@ -1,11 +1,11 @@
-use std::{io::BufReader, path};
+use std::io::BufReader;
 use image::{self, ImageReader};
 
 use actix_web::{get, post, web::{self, Data}, Responder, Result,};
 
 use actix_multipart::form::{json::Json as MpJson, tempfile::TempFile, MultipartForm};
-use serde::Deserialize;
-use crate::{database, types, AppState};
+use serde::{Serialize, Deserialize};
+use crate::{auth, database, types, AppState};
 
 #[derive(Debug, MultipartForm)]
 struct ShelveForm {
@@ -16,17 +16,20 @@ struct ShelveForm {
 
 #[post("/register_book")]
 pub async fn register_book(state: Data<AppState>, MultipartForm(form): MultipartForm<ShelveForm>) -> actix_web::Result<String> {
-    let _book_id = database::insert_book(&state.db, form.json.clone()).await
-        .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
+    let _book_id = match database::insert_book(&state.db, form.json.clone()).await {
+        Ok(Some(book_id)) => book_id,
+        Ok(None) => return Err(actix_web::error::ErrorInternalServerError("Could not create book")),
+        Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+    };
 
     let reader = BufReader::new(form.file.file.reopen()?);
     let img = ImageReader::new(reader).with_guessed_format()?.decode()
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
 
-    img.save(format!("./backend/db/images/book-covers/{}.webp", form.json.isbn))
+    img.save(format!("./backend/db/images/book_covers/{}.webp", form.json.isbn))
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
 
-    Ok(format!("Shelved {}. Access its cover at '/book-cover/{}.webp'", form.json.title, form.json.isbn))
+    Ok(format!("Shelved {}. Access its cover at '/book_cover/{}.webp'", form.json.title, form.json.isbn))
 }
 
 #[derive(Deserialize)]
@@ -78,7 +81,8 @@ pub async fn edit_physical_book(state: Data<AppState>, edit_data: web::Json<Edit
 // #[derive(Deserialize)]
 // struct ReservationData {
 //     copy_id: u32,
-//     new_shelf_name: String
+//     start: String,
+//     end: String
 // }
 //
 // #[post("/reserve_physical_book")] 
@@ -91,7 +95,7 @@ pub async fn edit_physical_book(state: Data<AppState>, edit_data: web::Json<Edit
 // }
 
 
-#[derive(serde::Serialize)]
+#[derive(Serialize)]
 #[serde(transparent)]
 struct MultipleBooksResponse {
     books: Vec<types::Book>
@@ -122,7 +126,7 @@ pub async fn get_books(state: Data<AppState>, query: web::Query<BookSearchQueryP
     }
 }
 
-#[derive(serde::Serialize)]
+#[derive(Serialize)]
 struct SingleBookResponse {
     book: types::Book,
     copies: Vec<types::PhysicalBook>
@@ -136,10 +140,49 @@ pub async fn get_book(state: Data<AppState>, path: web::Path<(String,)>) -> Resu
     }
 }
 
-#[get("/get-shelves")]
+#[get("/get_shelves")]
 pub async fn get_shelves(state: Data<AppState>) -> Result<impl Responder> {
     match database::get_shelves(&state.db).await {
         Ok(shelves) => Ok(shelves.iter().map(|s| s.name.as_str()).collect::<Vec<_>>().join(",")),
         _ => Err(actix_web::error::ErrorInternalServerError("Could not retrieve bookshelves"))
+    }
+}
+
+#[derive(Deserialize)]
+struct UserCredentials {
+    username: String,
+    password: String
+}
+
+#[derive(Serialize)]
+#[serde(transparent)]
+struct SessionResponse {
+    token: String,
+}
+
+#[post("/login_user")]
+pub async fn login_user(state: Data<AppState>, login_data: web::Json<UserCredentials>) -> Result<impl Responder> {
+    let user_id = match database::login_user(&state.db, login_data.username.clone(), login_data.password.clone()).await {
+        Ok(Some(user_id)) => user_id,
+        _ => return Err(actix_web::error::ErrorUnauthorized("User doesn't exist or incorrect password"))
+    };
+    match auth::create_session(&state.db, user_id).await {
+        Ok(Some((_, token))) => Ok(web::Json(SessionResponse { token })),
+        Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string())),
+        _ => Err(actix_web::error::ErrorInternalServerError("Could not create session"))
+    }
+}
+
+#[post("/register_user")]
+pub async fn register_user(state: Data<AppState>, register_data: web::Json<UserCredentials>) -> Result<impl Responder> {
+    let user_id = match database::register_user(&state.db, register_data.username.clone(), register_data.password.clone()).await {
+        Ok(Some(user_id)) => user_id,
+        Ok(None) => return Err(actix_web::error::ErrorConflict("Username already exists")),
+        Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+    };
+    match auth::create_session(&state.db, user_id).await {
+        Ok(Some((_, token))) => Ok(web::Json(SessionResponse { token })),
+        Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string())),
+        _ => Err(actix_web::error::ErrorInternalServerError("Could not create session"))
     }
 }

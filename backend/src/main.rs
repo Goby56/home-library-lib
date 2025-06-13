@@ -1,12 +1,16 @@
 mod database;
 mod routes;
 mod types;
+mod auth;
 
 use std::{env, vec};
 use std::str::FromStr;
 
 use actix_cors::Cors;
+use actix_web::body::MessageBody;
+use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::http;
+use actix_web::middleware;
 use actix_web::{web::Data, App, HttpServer};
 use actix_files;
 use sqlx::{sqlite::SqliteConnectOptions, Pool, Sqlite, SqlitePool};
@@ -29,6 +33,25 @@ async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
     return Ok(pool);
 }
 
+async fn session_middleware(
+    state: Data<AppState>,
+    req: ServiceRequest, 
+    next: middleware::Next<impl MessageBody>) 
+    -> Result<ServiceResponse<impl MessageBody>, actix_web::Error> {
+    let path = req.path();
+    if path == "/login_user" || path == "/register_user" {
+        return next.call(req).await;
+    }
+    if let Some(session_token) = req.cookie("session-token") {
+        return match auth::validate_session(&state.db, session_token.to_string()).await {
+            Ok(Some(_session)) => next.call(req).await,
+            Ok(None) => Err(actix_web::error::ErrorUnauthorized("Session token unauthorized")),
+            Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+        }
+    }
+    Err(actix_web::error::ErrorUnauthorized("No session token provided"))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().unwrap(); // Load .env file
@@ -36,6 +59,7 @@ async fn main() -> std::io::Result<()> {
     let pool = init_database()
         .await
         .expect("Could not initialize database");
+
     HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin("http://192.168.1.223:5173")
@@ -45,6 +69,7 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(cors)
+            .wrap(middleware::from_fn(session_middleware))
             .app_data(Data::new(AppState { db: pool.clone() }))
             .service(routes::get_book)
             .service(routes::get_books)
@@ -52,62 +77,11 @@ async fn main() -> std::io::Result<()> {
             .service(routes::add_physical_book)
             .service(routes::edit_physical_book)
             .service(routes::get_shelves)
-            .service(actix_files::Files::new("/book-cover", "./backend/db/images/book-covers/"))
+            .service(routes::register_user)
+            .service(routes::login_user)
+            .service(actix_files::Files::new("/book_cover", "./backend/db/images/book_covers/"))
     })
     .bind(("0.0.0.0", 8080))?
     .run()
     .await
 }
-
-// fn shelve(input: ShelveCommand, library: &mut Library) -> bool {
-//     if let Ok(book) = Book::from(input) {
-//         println!("Adding book: {}", book.metadata.title);
-//         library.add_book(book);
-//     } else {
-//         println!("Error adding book")
-//     }
-//     return true;
-// }
-//
-// fn search(input: SearchCommand, library: &Library) -> bool {
-//     let search_results = library.search(&input.search_str, input.limit.to_owned(), input.year_expr);
-//     if search_results.is_empty() {
-//         println!("Found no books");
-//     } else {
-//         for result in search_results {
-//             println!("{} (score: {})", result.book.metadata.title, result.score)
-//         }
-//     }
-//     return false;
-// }
-//
-// fn borrow(input: BorrowCommand, library: &mut Library) -> bool {
-//     match library.modify_borrow(Some(input.borrower), Uuid::deserialize(&input.uuid)) {
-//         Ok(book) => println!("{} is now borrowed by {}\n", book.metadata.title, book.borrower.unwrap()),
-//         Err(error) => {
-//             println!("Cannot borrow book!\n{error}");
-//             return false;
-//         }
-//     }
-//
-//     return true;
-// }
-//
-// fn return_(input: ReturnCommand, library: &mut Library) -> bool {
-//     match library.modify_borrow(None, Uuid::deserialize(&input.uuid)) {
-//         Ok(book) => println!("{} has now been returned\n", book.metadata.title),
-//         Err(error) => {
-//             println!("Cannot return book!\n{error}");
-//             return false;
-//         }
-//     }
-//     return true;
-// }
-//
-// fn list_borrows(input: ListBorrowsCommand, library: &Library) -> bool {
-//     match library.list_borrows(&input.borrower) {
-//         Ok(books) => books.iter().enumerate().for_each(|(i, b)| println!("{}: {b}", i+1)),
-//         Err(error) => println!("{error}")
-//     }
-//     return false
-// }

@@ -57,7 +57,7 @@ CREATE TABLE "Shelf" (
 );
 CREATE TABLE "User" (
     "id"    INTEGER NOT NULL UNIQUE,
-    "name"  TEXT NOT NULL UNIQUE,
-    "password" TEXT NOT NULL,
+    "username"  TEXT NOT NULL UNIQUE,
+    "password_hash" TEXT NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );

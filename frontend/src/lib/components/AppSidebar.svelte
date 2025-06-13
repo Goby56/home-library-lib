@@ -90,10 +90,10 @@
 -->
  
 <Sidebar.Root variant="sidebar" >
-  <Sidebar.Header>
+  <Sidebar.Header class="bg-popover">
     <SidebarToggleButton/>
   </Sidebar.Header>
-  <Sidebar.Content>
+  <Sidebar.Content class="bg-popover">
     <Sidebar.Group>
       <Sidebar.GroupLabel>Kategorier</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
@@ -133,7 +133,7 @@
       </Sidebar.GroupContent>
     </Sidebar.Group>
   </Sidebar.Content>
-  <Sidebar.Footer>
+  <Sidebar.Footer class="bg-popover">
     <DarkModeToggle/>
   </Sidebar.Footer>
 </Sidebar.Root>

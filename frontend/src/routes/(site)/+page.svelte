@@ -4,7 +4,7 @@
 
   import QuickItemAddButton from "$lib/components/QuickItemAddButton.svelte";
   import placeHolderImage from "$lib/assets/placeholder_image.webp";
-  import { getCoverImage } from "./../lib/utils";
+  import { getCoverImage } from "$lib/utils";
   let books = data.books as any[];
   let bookCovers = $state(Object.fromEntries(books.map(book => [book.isbn, placeHolderImage])));
   books.forEach(async (book) => {

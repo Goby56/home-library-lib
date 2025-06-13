@@ -4,15 +4,17 @@
   import Searchbar from "./Searchbar.svelte";
   import Button from "./ui/button/button.svelte";
   import SidebarToggleButton from "./SidebarToggleButton.svelte";
+  import AppLogo from "$lib/assets/rose_icon.svelte";
 </script>
 
-<header class="z-50 flex w-full fixed h-16 items-center gap-2 bg-sidebar border-b p-2">
+<header class="z-50 flex w-full fixed h-16 items-center gap-2 bg-popover border-b p-2">
   <div class="w-full flex items-center justify-between">
     <div class="flex justify-start items-center gap-2 z-10">
       <SidebarToggleButton/>
-      <h3 class="hidden md:flex scroll-m-20 text-2xl font-semibold tracking-tight">
-        <a href="/">Rosenport</a>
-      </h3>
+      <a class="hidden md:flex justify-center items-center gap-3 text-3xl font-semibold" href="/">
+        <AppLogo/>
+        Rosenport
+      </a>
     </div>
     <div class="flex justify-center w-full md:w-1/2">
       <Searchbar/>

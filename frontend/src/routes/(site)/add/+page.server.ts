@@ -1,12 +1,13 @@
 import type { PageServerLoad, Actions } from "./$types.js";
 import { superValidate, fail, message, setError } from "sveltekit-superforms";
 import { zod } from "sveltekit-superforms/adapters";
-import { bookFormSchema } from "./book-form-schema";
+import { bookFormSchema } from "./book-form-schema.js";
 import { parseDate } from 'chrono-node';
 // import { fail } from "@sveltejs/kit";
 import axios from "axios";
 import placeHolderImage from "$lib/assets/placeholder_image.webp";
 import { redirect } from "@sveltejs/kit";
+import { BACKEND_URL, backendPOST } from "$lib/utils.js";
 
 const GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes?q=isbn:";
 
@@ -68,15 +69,13 @@ export const actions: Actions = {
     formData.append("json", new Blob([JSON.stringify(book)], { type: "application/json" }))
     formData.append("file", bookForm.data.cover)
 
-    let response = await axios.post("http://192.168.1.223:8080/register_book", formData);
+    let response = await backendPOST(event.cookies, "/register_book", formData);
 
     if (response.status >= 400) {
         return setError(bookForm, response.data)
     }
 
     redirect(303, "/book/" + bookForm.data.isbn);
-
-    // return message(bookForm, { success: true, return: response.data });
   },
 };
 

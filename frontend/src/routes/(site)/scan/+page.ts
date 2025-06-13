@@ -11,7 +11,7 @@ export const load: PageLoad = async ({ url }) => {
   // https://ioshelp.qrbot.net/xcallback
   
   if (shouldRedirect === "true") {
-    throw redirect(302, QRBOT_SCAN_URL + SELF_URL);
+    redirect(302, QRBOT_SCAN_URL + SELF_URL);
   }
 
   const source = url.searchParams.get("x-source")
@@ -20,7 +20,7 @@ export const load: PageLoad = async ({ url }) => {
   
   if (source === "qrbot") {
     if (format === "ean13") {
-        throw redirect(302, "/add?isbn=" + content)
+        redirect(302, "/add?isbn=" + content)
     }
   }
 

@@ -1,3 +1,11 @@
+use argon2::{
+    password_hash::{
+        rand_core::OsRng,
+        PasswordHash, PasswordHasher, PasswordVerifier, SaltString
+    },
+    Argon2
+};
+
 use sqlx::SqlitePool;
 
 use crate::types::{self, Shelf};
@@ -56,7 +64,7 @@ pub async fn remove_physical_book(pool: &SqlitePool, id: u32) -> Result<(), sqlx
 
 // pub async fn reserve_physical_book(pool: &SqlitePool, id: u32, start_date: String, end_date: String) -> Result<(), sqlx::Error> {
 //     let reservation_id: Option<u32> = sqlx::query_scalar("
-//         INSERT INTO Reservation
+//         INSERT INTO Reservation (s)
 //         ")
 // }
 
@@ -121,8 +129,8 @@ pub async fn create_physical_book(pool: &SqlitePool, book: u32, shelf: u32) -> R
     Ok(())
 }
 
-pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<u32, sqlx::Error> {
-    let book_id: u32 = sqlx::query_scalar("
+pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<Option<u32>, sqlx::Error> {
+    let book_id: Option<u32> = sqlx::query_scalar("
         INSERT INTO Book (isbn, title, publication_year, page_count, language)
         VALUES (?, ?, ?, ?, ?) RETURNING id")
         .bind(book.isbn)
@@ -130,7 +138,11 @@ pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<u32, sq
         .bind(book.publication_year)
         .bind(book.page_count)
         .bind(book.language)
-        .fetch_one(pool).await?;
+        .fetch_optional(pool).await?;
+
+    let Some(book_id) = book_id else {
+        return Ok(None);
+    };
     
     for author in book.authors { // Insert new author and connect to book
         let author_id: Option<u32> = sqlx::query_scalar("
@@ -163,7 +175,7 @@ pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<u32, sq
                 .execute(pool).await?;
         }
     }
-    Ok(book_id)
+    Ok(Some(book_id))
 }
 
 pub async fn get_books(pool: &SqlitePool, _search_str: Option<String>, 
@@ -230,4 +242,37 @@ pub async fn get_books(pool: &SqlitePool, _search_str: Option<String>,
     }
 
     }).collect())
+}
+
+// pub async fn get_user_id(pool: &SqlitePool, username: String) -> Result<Option<u32>, sqlx::Error> {
+//     sqlx::query_scalar("
+//         SELECT id FROM User WHERE username = ?
+//         ").bind(username).fetch_optional(pool).await
+// }
+
+pub async fn login_user(pool: &SqlitePool, username: String, password: String) -> Result<Option<u32>, sqlx::Error> {
+    let (id, password_hash): (u32, String) = sqlx::query_as("
+        SELECT id, password_hash
+        FROM User
+        WHERE username = ?").bind(username).fetch_one(pool).await?;
+    if let Ok(parsed_hash) = PasswordHash::new(&password_hash) {
+        if Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok() {
+            return Ok(Some(id))
+        }
+    }
+    Ok(None)
+}
+
+pub async fn register_user(pool: &SqlitePool, username: String, password: String) -> Result<Option<u32>, sqlx::Error> {
+    let salt = SaltString::generate(&mut OsRng);
+
+    if let Ok(password_hash) = Argon2::default().hash_password(password.as_bytes(), &salt) {
+        let user_id: Option<u32> = sqlx::query_scalar("
+            INSERT INTO User (username, password_hash)
+            VALUES (?, ?)
+            ON CONFLICT (username) DO NOTHING
+            RETURNING id").bind(username).bind(password_hash.to_string()).fetch_optional(pool).await?;
+        return Ok(user_id);
+    }
+    Ok(None)
 }

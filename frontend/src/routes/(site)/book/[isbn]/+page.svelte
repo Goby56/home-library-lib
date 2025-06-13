@@ -1,41 +1,27 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
   import { MediaQuery } from "svelte/reactivity";
-  import PhysicalBookManagerButton from '$lib/components/PhysicalBookManagerButton.svelte';
-  import { reserveBook, getLabelFromLanguageCode } from "$lib/utils";
+  import PhysicalBookManagerButton from './PhysicalBookManagerButton.svelte';
+  import { getLabelFromLanguageCode } from "$lib/utils";
   import * as Drawer from "$lib/components/ui/drawer/index.js";
   import { buttonVariants } from "$lib/components/ui/button/index.js";
   import Button from "$lib/components/ui/button/button.svelte";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import { getLocalTimeZone, today } from "@internationalized/date";
-  import { Header, RangeCalendar } from "$lib/components/ui/range-calendar/index.js";
+  import { RangeCalendar } from "$lib/components/ui/range-calendar/index.js";
   import ShelfSelector from "$lib/components/ShelfSelector.svelte";
-  import * as Popover from "$lib/components/ui/popover/index.js";
-  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-  import * as Tabs from "$lib/components/ui/tabs/index.js";
-  import * as Command from "$lib/components/ui/command/index.js";
-  import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
-  import { tick } from "svelte";
   import axios from "axios";
-  import { cn } from "$lib/utils.js";
-    import PhysicalBookSelector from './PhysicalBookSelector.svelte';
+  import { BACKEND_URL } from "$lib/utils.js";
+  import PhysicalBookSelector from './PhysicalBookSelector.svelte';
+  import { enhance } from '$app/forms';
  
 	let { data }: PageProps = $props();
 
   let coverImage = data.cover;
-  const isDesktop = new MediaQuery("(min-width: 768px)");
 
   let shelves = $derived(data.shelves);
 
   let selectedShelf = $state("");
-
-  async function addToShelf(shelf: string) {
-      let physical_copy = {
-          isbn: data.book.isbn, name: shelf
-      }
-      return axios.post("http://192.168.1.223:8080/add_physical_book", physical_copy);
-  }
-
 
   const start = today(getLocalTimeZone());
   const end = start.add({ days: 7 });
@@ -52,17 +38,13 @@
     return null;
   })
 
+  let reservationStart = $derived(reservationDates?.start.toString());
+  let reservationEnd = $derived(reservationDates?.end.toString());
+
   let selectedCopy: any = $state(undefined);
+  let selectedCopyID = $derived(selectedCopy?.id);
 
   let pendingReservation = $state(false);
-  async function reserve() {
-    if (selectedCopy == null) {
-      return
-    }
-    pendingReservation = true;
-    let response = await reserveBook(selectedCopy.id, reservationDates.start, reservationDates.end);
-    pendingReservation = false;
-  }
 
 </script>
 
@@ -92,9 +74,9 @@
             {#each data.copies as physical_copy}
               <PhysicalBookManagerButton book={data.book} physicalCopy={physical_copy} shelves={shelves}/>
             {/each}
-            <ShelfSelector bind:value={selectedShelf} action={addToShelf} shelves={data.shelves}>
-              {#snippet actionTrigger(performAction)}
-                <Button onclick={performAction} class="rounded-l-none" size="icon"><PlusIcon/></Button>
+            <ShelfSelector bind:value={selectedShelf} shelves={data.shelves}>
+              {#snippet actionTrigger()}
+                <Button formaction="?/add_copy" class="rounded-l-none" size="icon"><PlusIcon/></Button>
               {/snippet}
               {#snippet noShelfSelected()}
                 {#if data.copies.length == 0}
@@ -134,35 +116,46 @@
     <Drawer.Header>
       <Drawer.Title>Reservera bok</Drawer.Title>
     </Drawer.Header>
-    <div class="flex flex-col justify-start items-center h-full">
+    <form method="POST" use:enhance={() => {
+      pendingReservation = true;
+      return async ({ update }) => {
+        await update();
+        pendingReservation = false;
+      }
+    }}>
+      <div class="flex flex-col justify-start items-center h-full">
 
-      <RangeCalendar bind:value={reservationDates} />
-      <div class="flex flex-col gap-2 items-center">
-        
-        <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
+        <RangeCalendar bind:value={reservationDates} />
+        <input type="hidden" name="reservationStart" bind:value={reservationStart}/>
+        <input type="hidden" name="reservationEnd" bind:value={reservationEnd}/>
+        <div class="flex flex-col gap-2 items-center">
+          
+          <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
+          <input type="hidden" name="physicalCopyID" bind:value={selectedCopyID}/>
 
-        {#if reservationDuration && selectedCopy}
-          <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{data.book.title}</b> på hyllan {selectedCopy.shelf.name} i <u>{reservationDuration} dagar</u></p>
-        {:else}
-          {#if !reservationDuration}
-            <p class="text-center text-muted-foreground text-sm px-2">Ange två datum som du vill reservera boken mellan</p>
+          {#if reservationDuration && selectedCopy}
+            <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{data.book.title}</b> på hyllan {selectedCopy.shelf.name} i <u>{reservationDuration} dagar</u></p>
+          {:else}
+            {#if !reservationDuration}
+              <p class="text-center text-muted-foreground text-sm px-2">Ange två datum som du vill reservera boken mellan</p>
+            {/if}
+            {#if !selectedCopy}   
+              <p class="text-center text-muted-foreground text-sm px-2">Välj vilken bokhylla du vill låna boken från</p>
+            {/if}
           {/if}
-          {#if !selectedCopy}   
-            <p class="text-center text-muted-foreground text-sm px-2">Välj vilken bokhylla du vill låna boken från</p>
+        </div>
+
+        <Drawer.Footer class="w-full bottom-0">
+          {#if reservationDuration && selectedCopy}
+            <Button type="submit" formaction="?/reserve_copy">Reservera</Button>
+          {:else}
+            <Button disabled>Reservera</Button>
           {/if}
-        {/if}
+          <Drawer.Close class={buttonVariants({ variant: "outline" })}>
+            Tillbaka
+          </Drawer.Close>
+        </Drawer.Footer>
       </div>
-
-      <Drawer.Footer class="w-full bottom-0">
-        {#if reservationDuration && selectedCopy}
-          <Button onclick={reserve}>Reservera</Button>
-        {:else}
-          <Button disabled>Reservera</Button>
-        {/if}
-        <Drawer.Close class={buttonVariants({ variant: "outline" })}>
-          Tillbaka
-        </Drawer.Close>
-      </Drawer.Footer>
-    </div>
+    </form>
   </Drawer.Content>
 </Drawer.Root>
