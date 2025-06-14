@@ -44,18 +44,16 @@ async fn session_middleware(
     if path == "/login_user" || path == "/register_user" {
         return next.call(req).await;
     }
-    if let Some(cookie) = req.cookie("session-token") {
-        let session_token = cookie.to_string();
-        let Some(token) = session_token.strip_prefix("session-token=") else {
-            return Err(actix_web::error::ErrorUnauthorized("Could not parse session token"));
-        };
-        return match auth::validate_session(&state.db, token.to_string()).await {
-            Ok(Some(_session)) => next.call(req).await,
-            Ok(None) => Err(actix_web::error::ErrorUnauthorized("Session token unauthorized")),
-            Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+    match auth::parse_auth_cookie(req.cookie(auth::AUTH_COOKIE)) {
+        None => return Err(actix_web::error::ErrorUnauthorized("Could not find session token")),
+        Some(token) => {
+            return match auth::validate_session(&state.db, token).await {
+                Ok(Some(_session)) => next.call(req).await,
+                Ok(None) => Err(actix_web::error::ErrorUnauthorized("Session token unauthorized")),
+                Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+            }
         }
     }
-    Err(actix_web::error::ErrorUnauthorized("No session token provided"))
 }
 
 #[actix_web::main]
@@ -86,6 +84,8 @@ async fn main() -> std::io::Result<()> {
             .service(routes::get_shelves)
             .service(routes::register_user)
             .service(routes::login_user)
+            .service(routes::reserve_physical_book)
+            .service(routes::edit_reservation)
             .service(actix_files::Files::new("/book_cover", "./backend/db/images/book_covers/"))
     })
     .bind(("0.0.0.0", 8080))?

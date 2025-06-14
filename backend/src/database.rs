@@ -7,10 +7,11 @@ use argon2::{
 };
 
 use sqlx::SqlitePool;
+use time::UtcDateTime;
 
-use crate::types::{self, Shelf};
+use crate::types;
 
-pub async fn get_physical_copies(pool: &SqlitePool, isbn: String) -> Result<(Option<types::Book>, Vec<types::PhysicalBook>), sqlx::Error>  {
+pub async fn get_physical_copies(pool: &SqlitePool, isbn: &str) -> Result<(Option<types::Book>, Vec<types::PhysicalBook>), sqlx::Error>  {
     let book = get_books(pool, None, Some(isbn), Some(1), true).await?.pop(); 
     // Vec should be length 0 or 1 so pop will give that element
 
@@ -48,8 +49,8 @@ async fn get_physical_book(pool: &SqlitePool, id: u32) -> Result<Option<types::P
     }))
 }
 
-pub async fn move_physical_book(pool: &SqlitePool, id: u32, new_shelf: String) -> Result<Option<u32>, sqlx::Error> {
-    let shelf: Option<Shelf> = get_or_create_shelf(pool, new_shelf.clone()).await?;
+pub async fn move_physical_book(pool: &SqlitePool, id: u32, new_shelf: &str) -> Result<Option<u32>, sqlx::Error> {
+    let shelf: Option<types::Shelf> = get_or_create_shelf(pool, new_shelf).await?;
     if let Some(shelf) = shelf {
         sqlx::query("
             UPDATE PhysicalBook
@@ -67,20 +68,54 @@ pub async fn remove_physical_book(pool: &SqlitePool, id: u32) -> Result<(), sqlx
     Ok(())
 }
 
-// pub async fn reserve_physical_book(pool: &SqlitePool, id: u32, start_date: String, end_date: String) -> Result<(), sqlx::Error> {
-//     let reservation_id: Option<u32> = sqlx::query_scalar("
-//         INSERT INTO Reservation (s)
-//         ")
-// }
+pub async fn reserve_physical_book(pool: &SqlitePool, user_id: u32, copy_id: u32, start_date: &str, end_date: &str) -> Result<(), sqlx::Error> {
+    let now = UtcDateTime::now();
+    let reservation_id: u32 = sqlx::query_scalar("
+        INSERT INTO Reservation (user, created_at, start_date, end_date)
+        VALUES (?, ?, ?, ?)
+        RETURNING id").bind(user_id).bind(now.unix_timestamp()).bind(start_date).bind(end_date)
+        .fetch_one(pool).await?;
+    
+    sqlx::query("
+        UPDATE PhysicalBook
+        SET reservation = ?
+        WHERE id = ?").bind(reservation_id).bind(copy_id).execute(pool).await?;
 
-pub async fn get_shelves(pool: &SqlitePool) -> Result<Vec<Shelf>, sqlx::Error> {
+    Ok(())
+}
+
+pub async fn get_reservation(pool: &SqlitePool, id: u32) -> Result<Option<types::ReservationStatus>, sqlx::Error> {
+    let reservation: Option<types::ReservationStatus> = sqlx::query_as("
+        SELECT id, user, created_at, start_date, end_date
+        FROM Reservation
+        WHERE id = ?").bind(id).fetch_optional(pool).await?;
+    Ok(reservation)
+}
+
+pub async fn edit_reservation(pool: &SqlitePool, id: u32, start_date: &str, end_date: &str) -> Result<(), sqlx::Error> {
+    sqlx::query("
+        UPDATE Reservation
+        SET start_date = ?,
+            end_date = ?
+        WHERE id = ?").bind(start_date).bind(end_date).bind(id).execute(pool).await?;
+    Ok(())
+}
+
+pub async fn remove_reservation(pool: &SqlitePool, id: u32) -> Result<(), sqlx::Error> {
+    sqlx::query("
+        DELETE FROM Reservation
+        WHERE id = ?").bind(id).execute(pool).await?;
+    Ok(())
+}
+
+pub async fn get_shelves(pool: &SqlitePool) -> Result<Vec<types::Shelf>, sqlx::Error> {
     let shelves: Vec<types::Shelf> = sqlx::query_as("
         SELECT id, name FROM Shelf
         ").fetch_all(pool).await?;
     return Ok(shelves);
 }
 
-pub async fn get_shelf(pool: &SqlitePool, id: Option<u32>, name: Option<String>) -> Result<Option<types::Shelf>, sqlx::Error> {
+pub async fn get_shelf(pool: &SqlitePool, id: Option<u32>, name: Option<&str>) -> Result<Option<types::Shelf>, sqlx::Error> {
     if let Some(id) = id {
         let shelf: Option<types::Shelf> = sqlx::query_as("
             SELECT id, name 
@@ -99,31 +134,17 @@ pub async fn get_shelf(pool: &SqlitePool, id: Option<u32>, name: Option<String>)
 }
 
 
-pub async fn get_or_create_shelf(pool: &SqlitePool, name: String) -> Result<Option<types::Shelf>, sqlx::Error> {
+pub async fn get_or_create_shelf(pool: &SqlitePool, name: &str) -> Result<Option<types::Shelf>, sqlx::Error> {
     let shelf_id: Option<u32> = sqlx::query_scalar("
         INSERT INTO Shelf (name) VALUES (?)
         ON CONFLICT(name) DO UPDATE SET name=name
-        RETURNING id").bind(name.clone()).fetch_optional(pool).await?;
+        RETURNING id").bind(name).fetch_optional(pool).await?;
     if let Some(id) = shelf_id {
-        return Ok(Some(Shelf {
-            id, name
+        return Ok(Some(types::Shelf {
+            id, name: name.to_string()
         }));
     }
     Ok(None)
-}
-
-pub async fn get_reservation(pool: &SqlitePool, id: u32) -> Result<Option<types::ReservationStatus>, sqlx::Error> {
-   let shelf: Option<types::ReservationStatus> = sqlx::query_as(r#"
-       SELECT 
-           Reservation.id, 
-           User.name, 
-           Reservation.timestamp, 
-           Reservation.start_date, 
-           Reservation.end_date
-       FROM Reservation
-       JOIN User ON User.id = Reservation.user
-       WHERE Reservation.id = ?"#).bind(id).fetch_optional(pool).await?;
-   Ok(shelf)
 }
 
 pub async fn create_physical_book(pool: &SqlitePool, book: u32, shelf: u32) -> Result<(), sqlx::Error> {
@@ -183,8 +204,8 @@ pub async fn insert_book(pool: &SqlitePool, book: types::Book) -> Result<Option<
     Ok(Some(book_id))
 }
 
-pub async fn get_books(pool: &SqlitePool, _search_str: Option<String>, 
-    isbn: Option<String>, limit: Option<u32>,
+pub async fn get_books(pool: &SqlitePool, _search_str: Option<&str>, 
+    isbn: Option<&str>, limit: Option<u32>,
     include_non_physical: bool) 
     -> Result<Vec<types::Book>, sqlx::Error>{
     let mut sq = format!(r#"
@@ -249,13 +270,7 @@ pub async fn get_books(pool: &SqlitePool, _search_str: Option<String>,
     }).collect())
 }
 
-// pub async fn get_user_id(pool: &SqlitePool, username: String) -> Result<Option<u32>, sqlx::Error> {
-//     sqlx::query_scalar("
-//         SELECT id FROM User WHERE username = ?
-//         ").bind(username).fetch_optional(pool).await
-// }
-
-pub async fn login_user(pool: &SqlitePool, username: String, password: String) -> Result<Option<u32>, sqlx::Error> {
+pub async fn login_user(pool: &SqlitePool, username: &str, password: &str) -> Result<Option<u32>, sqlx::Error> {
     let (id, password_hash): (u32, String) = sqlx::query_as("
         SELECT id, password_hash
         FROM User
@@ -268,7 +283,7 @@ pub async fn login_user(pool: &SqlitePool, username: String, password: String) -
     Ok(None)
 }
 
-pub async fn register_user(pool: &SqlitePool, username: String, password: String) -> Result<Option<u32>, sqlx::Error> {
+pub async fn register_user(pool: &SqlitePool, username: &str, password: &str) -> Result<Option<u32>, sqlx::Error> {
     let salt = SaltString::generate(&mut OsRng);
 
     if let Ok(password_hash) = Argon2::default().hash_password(password.as_bytes(), &salt) {

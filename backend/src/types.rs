@@ -1,6 +1,6 @@
 
 // use serde::Serialize;
-use time::PrimitiveDateTime;
+use time::Date;
 
 // pub trait Item {
 //     fn item_type() -> ItemType;
@@ -16,11 +16,11 @@ use time::PrimitiveDateTime;
 
 #[derive(sqlx::FromRow, serde::Serialize)]
 pub struct ReservationStatus {
-    id: u32,
-    user: String,
-    timestamp: PrimitiveDateTime,
-    start_date:  PrimitiveDateTime,
-    end_date: Option<PrimitiveDateTime>,
+    pub id: u32,
+    pub user: u32,
+    pub created_at: i64,
+    pub start_date:  Date,
+    pub end_date: Option<Date>,
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]

@@ -44,7 +44,7 @@ CREATE TABLE "GenreMatch" (
 CREATE TABLE "Reservation" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"user"	INTEGER NOT NULL,
-	"timestamp"	TEXT DEFAULT CURRENT_TIMESTAMP,
+	"created_at"	INTEGER NOT NULL,
     "start_date" TEXT NOT NULL,
     "end_date" TEXT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT),

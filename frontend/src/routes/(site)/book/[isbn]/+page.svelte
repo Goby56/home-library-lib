@@ -156,8 +156,12 @@
           {#if !reservationDuration}
             <p class="text-center text-muted-foreground text-sm px-2">Ange två datum som du vill reservera boken mellan</p>
           {/if}
-          {#if !selectedCopy}   
-            <p class="text-center text-muted-foreground text-sm px-2">Välj vilken bokhylla du vill låna boken från</p>
+          {#if !selectedCopy}
+            {#if data.copies.length != 0}
+              <p class="text-center text-muted-foreground text-sm px-2">Välj vilken bokhylla du vill låna boken från</p>
+            {:else}
+              <p class="text-center text-destructive text-sm px-2">Denna bok kan inte reserveras</p>
+            {/if}
           {/if}
         {/if}
       </div>

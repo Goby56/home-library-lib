@@ -8,9 +8,12 @@
 		value = $bindable(),
 		placeholder = $bindable(),
 		weekdayFormat = "short",
+    weekStartsOn = 1,
+    isDateUnavailable = undefined,
 		class: className,
 		...restProps
 	}: WithoutChildrenOrChild<RangeCalendarPrimitive.RootProps> = $props();
+
 </script>
 
 <RangeCalendarPrimitive.Root
@@ -18,6 +21,8 @@
 	bind:value
 	bind:placeholder
 	{weekdayFormat}
+  {weekStartsOn}
+  {isDateUnavailable}
 	class={cn("p-3", className)}
 	{...restProps}
 >
