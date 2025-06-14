@@ -13,7 +13,8 @@ use crate::types::{self, Shelf};
 pub async fn get_physical_copies(pool: &SqlitePool, isbn: String) -> Result<(Option<types::Book>, Vec<types::PhysicalBook>), sqlx::Error>  {
     let book = get_books(pool, None, Some(isbn), Some(1), true).await?.pop(); 
     // Vec should be length 0 or 1 so pop will give that element
-                                                        
+
+    
     let mut physical_copies = vec![];
     if let Some(b) = &book {
         for copy_id in &b.copy_ids {
@@ -26,20 +27,24 @@ pub async fn get_physical_copies(pool: &SqlitePool, isbn: String) -> Result<(Opt
 }
 
 async fn get_physical_book(pool: &SqlitePool, id: u32) -> Result<Option<types::PhysicalBook>, sqlx::Error> {
-    let copy: Option<(u32, u32)> = sqlx::query_as("
+    let copy: Option<(u32, Option<u32>)> = sqlx::query_as("
         SELECT shelf, reservation
         FROM PhysicalBook 
         WHERE id = ?").bind(id).fetch_optional(pool).await?;
-    if copy.is_none() {
+    let Some(copy) = copy else {
         return Ok(None);
-    }
-    let shelf = get_shelf(pool, Some(copy.unwrap().0), None).await?;
-    let reservation = get_reservation(pool, copy.unwrap().1).await?;
-    if shelf.is_none() {
+    };
+    let Some(shelf) = get_shelf(pool, Some(copy.0), None).await? else {
         return Ok(None);
-    }
+    };
+
+    let reservation = match copy.1 {
+        Some(reservation_id) => get_reservation(pool, reservation_id).await?,
+        None => None
+    };
+
     Ok(Some(types::PhysicalBook {
-        id, shelf: shelf.unwrap(), reservation
+        id, shelf, reservation
     }))
 }
 

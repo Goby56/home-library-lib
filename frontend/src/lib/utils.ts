@@ -46,11 +46,3 @@ export function setSessionCookie(cookies: Cookies, session: any) {
         maxAge: 60 * 60 * 24 * 7
     })
 }
-
-export async function getCoverImage(isbn: string) {
-    let coverImage = BACKEND_URL + "/book_cover/" + isbn + ".webp";
-    coverImage = await fetch(coverImage, { method: "HEAD" })
-        .then(res => res.ok ? coverImage : placeHolderImage)
-        .catch(_ => placeHolderImage)
-    return coverImage;
-}

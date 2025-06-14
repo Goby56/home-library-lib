@@ -7,10 +7,9 @@
   import * as Popover from "$lib/components/ui/popover/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import { MediaQuery } from "svelte/reactivity";
-
+  import { invalidateAll } from "$app/navigation";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import ShelfSelector from '$lib/components/ShelfSelector.svelte';
-  import { enhance } from '$app/forms';
 
   let { physicalCopy, book, shelves } = $props();
  
@@ -29,16 +28,59 @@
     return null;
   })
 
-  let reservationStart = $derived(reservationDates?.start.toString());
-  let reservationEnd = $derived(reservationDates?.end.toString());
-
   let selectedShelf = $state("");
-
-  let pendingRemoval = $state(false);
 
   let drawerOpen = $state(false);
 
   let pendingReservation = $state(false);
+
+  async function reserveCopy() {
+    pendingReservation = true;
+    const response = await fetch('/api/book-operations/reserve-copy', {
+  		method: 'POST',
+  		body: JSON.stringify({
+        copy_id: physicalCopy.id,
+        start_date: reservationDates?.start.toString(),
+        end_date: reservationDates?.end.toString(),
+        }),
+  		headers: {
+  			'content-type': 'application/json'
+  		}
+  	});
+    pendingReservation = false;
+    invalidateAll();
+  }
+
+  async function moveCopy() {
+    const response = await fetch('/api/book-operations/edit-copy', {
+  		method: 'POST',
+  		body: JSON.stringify({
+        copy_id: physicalCopy.id,
+        new_shelf_name: selectedShelf,
+        }),
+  		headers: {
+  			'content-type': 'application/json'
+  		}
+  	});
+  }
+
+  let pendingRemoval = $state(false);
+
+  async function removeCopy() {
+    pendingRemoval = true;
+    const response = await fetch('/api/book-operations/edit-copy', {
+  		method: 'POST',
+  		body: JSON.stringify({
+        copy_id: physicalCopy.id,
+        new_shelf_name: "",
+        }),
+  		headers: {
+  			'content-type': 'application/json'
+  		}
+  	});
+    pendingRemoval = false;
+    invalidateAll();
+  }
 
   const isDesktop = new MediaQuery("(min-width: 768px)");
 
@@ -56,34 +98,30 @@
         <Tabs.Trigger value="edit">Redigera</Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="reserve">
-        <form method="POST" use:enhance={() => {
-            pendingReservation = true;
-            return async ({ update }) => {
-              await update();
-              pendingReservation = false;
-            }
-        }}>
-          <input type="hidden" name="reservationStart" bind:value={reservationStart}/>
-          <input type="hidden" name="reservationEnd" bind:value={reservationEnd}/>
-          <input type="hidden" name="physicalCopyID" bind:value={physicalCopy.id}/>
-          <RangeCalendar bind:value={reservationDates} class="" />
-          <div class="flex flex-col gap-2 items-center">
-            {#if reservationDuration}
-              <Button formaction="?/reserve_copy">Reservera</Button>
-              <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{book.title}</b> på hyllan {physicalCopy.shelf.name} i <u>{reservationDuration} dagar</u></p>
-            {:else}   
-              <Button disabled>Reservera</Button>
-              <p class="text-center text-muted-foreground text-sm px-2">Ange två datum som du vill reservera boken mellan</p>
-            {/if}
-          </div>
-        </form>
+        <RangeCalendar bind:value={reservationDates} class="" />
+        <div class="flex flex-col gap-2 items-center">
+        {#if pendingReservation}
+          <Button disabled>
+            Reservera
+            <LoaderCircleIcon class="animate-spin"/>
+          </Button>
+        {:else}  
+          {#if reservationDuration}
+            <Button onclick={reserveCopy}>Reservera</Button>
+            <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{book.title}</b> på hyllan {physicalCopy.shelf.name} i <u>{reservationDuration} dagar</u></p>
+          {:else}   
+            <Button disabled>Reservera</Button>
+            <p class="text-center text-muted-foreground text-sm px-2">Ange två datum som du vill reservera boken mellan</p>
+          {/if}
+        {/if}
+        </div>
       </Tabs.Content>
       <Tabs.Content class="w-full" value="edit">
         <div class="flex justify-center gap-3">
-          <ShelfSelector bind:value={selectedShelf} shelves={shelves}>
-            {#snippet actionTrigger()}
+          <ShelfSelector bind:value={selectedShelf} action={moveCopy} shelves={shelves}>
+            {#snippet actionTrigger(performAction)}
               {#if selectedShelf != "" && selectedShelf != physicalCopy.shelf.name}
-                <Button formaction="?/move_copy" class="rounded-l-none">
+                <Button onclick={performAction} class="rounded-l-none">
                   Byt
                 </Button>
               {:else}
@@ -96,24 +134,14 @@
               Byt bokhylla
             {/snippet}
           </ShelfSelector>
-          <form method="POST" use:enhance={() => {
-              pendingRemoval = true;
-              return async ({ update }) => {
-                await update();
-                pendingRemoval = false;
-              }
-
-          }}>
-            <input type="hidden" name="physicalCopyID" bind:value={physicalCopy.id}/>
-            {#if pendingRemoval}
-              <Button disabled variant="destructive">
-                Tar bort bok
-                <LoaderCircleIcon class="animate-spin"/>
-              </Button>
-            {:else} 
-              <Button variant="destructive" formaction="?/remove_copy">Ta bort bok</Button>
-            {/if}
-          </form>
+          {#if pendingRemoval}
+            <Button disabled variant="destructive">
+              Tar bort bok
+              <LoaderCircleIcon class="animate-spin"/>
+            </Button>
+          {:else} 
+            <Button variant="destructive" onclick={removeCopy}>Ta bort bok</Button>
+          {/if}
         </div>
       </Tabs.Content>
     </Tabs.Root>
@@ -128,13 +156,11 @@
       <Drawer.Header>
         <Drawer.Description>Vad vill du göra med <b>{book.title}</b> på hylla {physicalCopy.shelf.name}?</Drawer.Description>
       </Drawer.Header>
-
         <div class="flex justify-center gap-3">
-  
-        <ShelfSelector bind:value={selectedShelf} shelves={shelves}>
-          {#snippet actionTrigger()}
+        <ShelfSelector bind:value={selectedShelf} action={moveCopy} shelves={shelves}>
+          {#snippet actionTrigger(performAction)}
             {#if selectedShelf != "" && selectedShelf != physicalCopy.shelf.name}
-              <Button formaction="?/move_copy" class="rounded-l-none">
+              <Button onclick={performAction} class="rounded-l-none">
                 Byt
               </Button>
             {:else}
@@ -147,24 +173,14 @@
             Flytta
           {/snippet}
         </ShelfSelector>
-        <form method="POST" use:enhance={() => {
-            pendingRemoval = true;
-            return async ({ update }) => {
-              await update();
-              pendingRemoval = false;
-            }
-
-        }}>
-          <input type="hidden" name="physicalCopyID" bind:value={physicalCopy.id}/>
           {#if pendingRemoval}
             <Button disabled variant="destructive">
               Tar bort bok
               <LoaderCircleIcon class="animate-spin"/>
             </Button>
           {:else} 
-            <Button variant="destructive" formaction="?/remove_copy">Ta bort bok</Button>
+            <Button variant="destructive" onclick={removeCopy}>Ta bort bok</Button>
           {/if}
-        </form>
         </div>
       <Drawer.Footer>
         <Drawer.Close class={buttonVariants({ variant: "outline" })}>

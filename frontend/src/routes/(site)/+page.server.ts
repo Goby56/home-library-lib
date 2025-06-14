@@ -11,9 +11,9 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
         redirect(302, "/login");
     }
     
-    let books = [];
+    let books: any[] = [];
     if (response.status == 200) {
-       books = await response.json()
+       books = await response.json();
     }
 
     return { books }

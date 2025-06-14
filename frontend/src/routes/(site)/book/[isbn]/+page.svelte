@@ -2,6 +2,7 @@
 	import type { PageProps } from './$types';
   import { MediaQuery } from "svelte/reactivity";
   import PhysicalBookManagerButton from './PhysicalBookManagerButton.svelte';
+  import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { getLabelFromLanguageCode } from "$lib/utils";
   import * as Drawer from "$lib/components/ui/drawer/index.js";
   import { buttonVariants } from "$lib/components/ui/button/index.js";
@@ -10,10 +11,7 @@
   import { getLocalTimeZone, today } from "@internationalized/date";
   import { RangeCalendar } from "$lib/components/ui/range-calendar/index.js";
   import ShelfSelector from "$lib/components/ShelfSelector.svelte";
-  import axios from "axios";
-  import { BACKEND_URL } from "$lib/utils.js";
   import PhysicalBookSelector from './PhysicalBookSelector.svelte';
-  import { enhance } from '$app/forms';
  
 	let { data }: PageProps = $props();
 
@@ -38,13 +36,43 @@
     return null;
   })
 
-  let reservationStart = $derived(reservationDates?.start.toString());
-  let reservationEnd = $derived(reservationDates?.end.toString());
-
   let selectedCopy: any = $state(undefined);
   let selectedCopyID = $derived(selectedCopy?.id);
 
   let pendingReservation = $state(false);
+
+  async function reserveCopy() {
+    pendingReservation = true;
+    const response = await fetch('/api/book-operations/reserve-copy', {
+  		method: 'POST',
+  		body: JSON.stringify({
+        copy_id: selectedCopyID,
+        start_date: reservationDates?.start.toString(),
+        end_date: reservationDates?.end.toString(),
+        }),
+  		headers: {
+  			'content-type': 'application/json'
+  		}
+  	});
+    pendingReservation = false;
+  }
+
+  let pendingAddToShelf = $state(false);
+
+  async function addToShelf() {
+    pendingAddToShelf = true;
+    const response = await fetch('/api/book-operations/add-copy', {
+  		method: 'POST',
+  		body: JSON.stringify({
+        isbn: data.book.isbn,
+        shelf_name: selectedShelf
+      }),
+  		headers: {
+  			'content-type': 'application/json'
+  		}
+  	});
+    pendingAddToShelf = false;
+  }
 
 </script>
 
@@ -74,9 +102,9 @@
             {#each data.copies as physical_copy}
               <PhysicalBookManagerButton book={data.book} physicalCopy={physical_copy} shelves={shelves}/>
             {/each}
-            <ShelfSelector bind:value={selectedShelf} shelves={data.shelves}>
-              {#snippet actionTrigger()}
-                <Button formaction="?/add_copy" class="rounded-l-none" size="icon"><PlusIcon/></Button>
+            <ShelfSelector bind:value={selectedShelf} action={addToShelf} shelves={data.shelves}>
+              {#snippet actionTrigger(performAction)}
+                <Button onclick={performAction} class="rounded-l-none" size="icon"><PlusIcon/></Button>
               {/snippet}
               {#snippet noShelfSelected()}
                 {#if data.copies.length == 0}
@@ -116,46 +144,41 @@
     <Drawer.Header>
       <Drawer.Title>Reservera bok</Drawer.Title>
     </Drawer.Header>
-    <form method="POST" use:enhance={() => {
-      pendingReservation = true;
-      return async ({ update }) => {
-        await update();
-        pendingReservation = false;
-      }
-    }}>
-      <div class="flex flex-col justify-start items-center h-full">
+    <div class="flex flex-col justify-start items-center h-full">
+      <RangeCalendar bind:value={reservationDates} />
+      <div class="flex flex-col gap-2 items-center">
+        
+        <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
 
-        <RangeCalendar bind:value={reservationDates} />
-        <input type="hidden" name="reservationStart" bind:value={reservationStart}/>
-        <input type="hidden" name="reservationEnd" bind:value={reservationEnd}/>
-        <div class="flex flex-col gap-2 items-center">
-          
-          <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
-          <input type="hidden" name="physicalCopyID" bind:value={selectedCopyID}/>
-
-          {#if reservationDuration && selectedCopy}
-            <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{data.book.title}</b> på hyllan {selectedCopy.shelf.name} i <u>{reservationDuration} dagar</u></p>
-          {:else}
-            {#if !reservationDuration}
-              <p class="text-center text-muted-foreground text-sm px-2">Ange två datum som du vill reservera boken mellan</p>
-            {/if}
-            {#if !selectedCopy}   
-              <p class="text-center text-muted-foreground text-sm px-2">Välj vilken bokhylla du vill låna boken från</p>
-            {/if}
+        {#if reservationDuration && selectedCopy}
+          <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{data.book.title}</b> på hyllan {selectedCopy.shelf.name} i <u>{reservationDuration} dagar</u></p>
+        {:else}
+          {#if !reservationDuration}
+            <p class="text-center text-muted-foreground text-sm px-2">Ange två datum som du vill reservera boken mellan</p>
           {/if}
-        </div>
+          {#if !selectedCopy}   
+            <p class="text-center text-muted-foreground text-sm px-2">Välj vilken bokhylla du vill låna boken från</p>
+          {/if}
+        {/if}
+      </div>
 
-        <Drawer.Footer class="w-full bottom-0">
+      <Drawer.Footer class="w-full bottom-0">
+        {#if pendingReservation}
+          <Button disabled>
+            Reservera
+            <LoaderCircleIcon class="animate-spin"/>
+          </Button>
+        {:else}
           {#if reservationDuration && selectedCopy}
-            <Button type="submit" formaction="?/reserve_copy">Reservera</Button>
+            <Button onclick={reserveCopy}>Reservera</Button>
           {:else}
             <Button disabled>Reservera</Button>
           {/if}
-          <Drawer.Close class={buttonVariants({ variant: "outline" })}>
-            Tillbaka
-          </Drawer.Close>
-        </Drawer.Footer>
-      </div>
-    </form>
+        {/if}
+        <Drawer.Close class={buttonVariants({ variant: "outline" })}>
+          Tillbaka
+        </Drawer.Close>
+      </Drawer.Footer>
+    </div>
   </Drawer.Content>
 </Drawer.Root>
