@@ -1,6 +1,6 @@
 
 // use serde::Serialize;
-use time::Date;
+use time::OffsetDateTime;
 
 // pub trait Item {
 //     fn item_type() -> ItemType;
@@ -19,8 +19,17 @@ pub struct ReservationStatus {
     pub id: u32,
     pub user: u32,
     pub created_at: i64,
-    pub start_date:  Date,
-    pub end_date: Option<Date>,
+    #[serde(with = "time::serde::iso8601")]
+    pub start_date:  OffsetDateTime,
+    #[serde(with = "time::serde::iso8601")]
+    pub end_date: OffsetDateTime,
+}
+
+impl ReservationStatus {
+    pub fn intersects(&self, start: OffsetDateTime, end: OffsetDateTime) -> bool {
+        // Reservations can start and end on the same date
+        self.start_date < end && start < self.end_date 
+    }
 }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
@@ -46,5 +55,5 @@ pub struct Book {
 pub struct PhysicalBook {
     pub id: u32,
     pub shelf: Shelf,
-    pub reservation: Option<ReservationStatus>,
+    pub reservations: Vec<ReservationStatus>,
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import Button from '$lib/components/ui/button/button.svelte';
-  import { getLocalTimeZone, today } from "@internationalized/date";
+  import { getLocalTimeZone, now, parseAbsoluteToLocal, type DateValue, type ZonedDateTime } from "@internationalized/date";
   import { buttonVariants } from "$lib/components/ui/button/index.js";
   import { RangeCalendar } from "$lib/components/ui/range-calendar/index.js";
   import * as Drawer from "$lib/components/ui/drawer/index.js";
@@ -12,8 +12,8 @@
   import ShelfSelector from '$lib/components/ShelfSelector.svelte';
 
   let { physicalCopy, book, shelves } = $props();
- 
-  const start = today(getLocalTimeZone());
+  
+  const start = now(getLocalTimeZone()).set({hour: 12, minute: 0, second: 0, millisecond: 0});
   const end = start.add({ days: 7 });
  
   let reservationDates = $state({
@@ -21,9 +21,20 @@
     end
   });
 
+  function isDateUnavailable(date: DateValue): boolean {
+    if (physicalCopy.reservation) {
+      const start = parseAbsoluteToLocal(physicalCopy.reservation.start_date);
+      const end = parseAbsoluteToLocal(physicalCopy.reservation.end_date);
+      if (start && end) {
+        return date.compare(start) >= 0 && date.compare(end) <= 0;
+      }
+    }
+    return false;
+  }
+
   let reservationDuration = $derived.by(() => {
     if (reservationDates.start && reservationDates.end) {
-      return reservationDates.end.compare(reservationDates.start)
+      return Math.round(reservationDates.end.compare(reservationDates.start) / (24 * 60 * 60 * 1000));
     }
     return null;
   })
@@ -36,12 +47,19 @@
 
   async function reserveCopy() {
     pendingReservation = true;
+    let start_date = reservationDates?.start?.toAbsoluteString();
+    let end_date = reservationDates?.end?.toAbsoluteString();
+
+    if (!start_date || !end_date) {
+      return 
+    }
+
     const response = await fetch('/api/book-operations/reserve-copy', {
   		method: 'POST',
   		body: JSON.stringify({
         copy_id: physicalCopy.id,
-        start_date: reservationDates?.start.toString(),
-        end_date: reservationDates?.end.toString(),
+        start_date,
+        end_date,
         }),
   		headers: {
   			'content-type': 'application/json'
@@ -98,7 +116,7 @@
         <Tabs.Trigger value="edit">Redigera</Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="reserve">
-        <RangeCalendar bind:value={reservationDates} class="" />
+        <RangeCalendar {isDateUnavailable} bind:value={reservationDates} class="" />
         <div class="flex flex-col gap-2 items-center">
         {#if pendingReservation}
           <Button disabled>

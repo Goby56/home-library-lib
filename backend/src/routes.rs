@@ -5,6 +5,7 @@ use actix_web::{get, post, web::{self, Data}, HttpRequest, Responder, Result};
 
 use actix_multipart::form::{json::Json as MpJson, tempfile::TempFile, MultipartForm};
 use serde::{Serialize, Deserialize};
+use time::OffsetDateTime;
 use crate::{auth, database, types, AppState};
 
 #[derive(Debug, MultipartForm)]
@@ -81,8 +82,10 @@ pub async fn edit_physical_book(state: Data<AppState>, edit_data: web::Json<Edit
 #[derive(Deserialize)]
 struct PhysicalBookReservation {
     copy_id: u32,
-    start: String,
-    end: String,
+    #[serde(with = "time::serde::iso8601")]
+    start: OffsetDateTime,
+    #[serde(with = "time::serde::iso8601")]
+    end: OffsetDateTime,
 }
 
 #[post("/reserve_physical_book")] 
@@ -94,28 +97,22 @@ pub async fn reserve_physical_book(state: Data<AppState>, req: HttpRequest, rese
     };  
 
     match database::reserve_physical_book(&state.db, 
-        user_id, reservation_data.copy_id, &reservation_data.start, &reservation_data.end).await {
-        Ok(()) => Ok(format!("Reserved physical copy {} to user {}", reservation_data.copy_id, user_id)),
+        user_id, reservation_data.copy_id, reservation_data.start, reservation_data.end).await {
+        Ok(true) => Ok(format!("Reserved physical copy {} to user {}", reservation_data.copy_id, user_id)),
+        Ok(false) => Err(actix_web::error::ErrorConflict("Reservation overlaps with another reservation")),
         Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     }
 }
 
-#[derive(Deserialize)]
-struct ReservationData {
-    id: u32,
-    start: String,
-    end: String,
-}
-
-#[post("/edit_reservation")]
-pub async fn edit_reservation(state: Data<AppState>, req: HttpRequest, reservation_data: web::Json<ReservationData>) -> Result<impl Responder> {
+#[post("/remove_reservation/{reservation_id}")]
+pub async fn edit_reservation(state: Data<AppState>, req: HttpRequest, path: web::Path<(u32,)>) -> Result<impl Responder> {
     let user_id = match auth::get_user_from_cookie(&state.db, req.cookie(auth::AUTH_COOKIE)).await {
         Ok(Some(user_id)) => user_id,
         Ok(None) => return Err(actix_web::error::ErrorUnauthorized("Could not find user to complete request")),
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
 
-    let reservation = match database::get_reservation(&state.db, reservation_data.id).await {
+    let reservation = match database::get_reservation(&state.db, path.into_inner().0).await {
         Ok(Some(reservation)) => reservation,
         Ok(None) => return Err(actix_web::error::ErrorNotFound("Could not find a reservation to edit")),
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
@@ -125,15 +122,9 @@ pub async fn edit_reservation(state: Data<AppState>, req: HttpRequest, reservati
         return Err(actix_web::error::ErrorForbidden("User does not own reservation"))
     }
 
-    if reservation_data.start == "" {
-        database::remove_reservation(&state.db, reservation.id).await
-            .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-        return Ok(String::from("Removed a reservation"))
-    }
-    database::edit_reservation(&state.db, reservation.id, &reservation_data.start, &reservation_data.end).await
+    database::remove_reservation(&state.db, reservation.id).await
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-
-    Ok(String::from("Edited a reservation"))
+    Ok(format!("User {user_id} removed reservation {}", reservation.id))
 }
 
 #[derive(Serialize)]
@@ -177,7 +168,8 @@ struct SingleBookResponse {
 pub async fn get_book(state: Data<AppState>, path: web::Path<(String,)>) -> Result<impl Responder> {
     match database::get_physical_copies(&state.db, &path.into_inner().0).await {
         Ok((Some(book), copies)) => Ok(web::Json(SingleBookResponse { book, copies })),
-        _ => Err(actix_web::error::ErrorNotFound("Book not found")),
+        Ok((None, _)) => Err(actix_web::error::ErrorNotFound("Book not found")),
+        Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string())),
     }
 }
 

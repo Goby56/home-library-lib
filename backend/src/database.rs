@@ -7,14 +7,13 @@ use argon2::{
 };
 
 use sqlx::SqlitePool;
-use time::UtcDateTime;
+use time::{OffsetDateTime, UtcDateTime};
 
 use crate::types;
 
 pub async fn get_physical_copies(pool: &SqlitePool, isbn: &str) -> Result<(Option<types::Book>, Vec<types::PhysicalBook>), sqlx::Error>  {
     let book = get_books(pool, None, Some(isbn), Some(1), true).await?.pop(); 
     // Vec should be length 0 or 1 so pop will give that element
-
     
     let mut physical_copies = vec![];
     if let Some(b) = &book {
@@ -28,24 +27,32 @@ pub async fn get_physical_copies(pool: &SqlitePool, isbn: &str) -> Result<(Optio
 }
 
 async fn get_physical_book(pool: &SqlitePool, id: u32) -> Result<Option<types::PhysicalBook>, sqlx::Error> {
-    let copy: Option<(u32, Option<u32>)> = sqlx::query_as("
-        SELECT shelf, reservation
-        FROM PhysicalBook 
-        WHERE id = ?").bind(id).fetch_optional(pool).await?;
-    let Some(copy) = copy else {
-        return Ok(None);
-    };
-    let Some(shelf) = get_shelf(pool, Some(copy.0), None).await? else {
+    let physical_copy: (u32, Option<String>) = sqlx::query_as("
+        SELECT 
+            PhysicalBook.shelf,
+            GROUP_CONCAT(DISTINCT Reservation.id) AS reservations
+        FROM PhysicalBook
+        LEFT JOIN BookReservationMatch ON PhysicalBook.id = BookReservationMatch.physical_book
+        LEFT JOIN Reservation ON BookReservationMatch.reservation = Reservation.id
+        WHERE PhysicalBook.id = ?
+        GROUP BY PhysicalBook.shelf").bind(id).fetch_one(pool).await?;
+
+    let Some(shelf) = get_shelf(pool, Some(physical_copy.0), None).await? else {
         return Ok(None);
     };
 
-    let reservation = match copy.1 {
-        Some(reservation_id) => get_reservation(pool, reservation_id).await?,
-        None => None
-    };
+    let mut reservations = vec![];
+        
+    if let Some(reservations_str) = physical_copy.1 {
+        for reservation_id in reservations_str.split(",").filter_map(|s| s.trim().parse::<u32>().ok()) {
+            if let Some(reservation) = get_reservation(pool, reservation_id).await? {
+                reservations.push(reservation);
+            }
+        }
+    }
 
     Ok(Some(types::PhysicalBook {
-        id, shelf, reservation
+        id, shelf, reservations
     }))
 }
 
@@ -68,20 +75,28 @@ pub async fn remove_physical_book(pool: &SqlitePool, id: u32) -> Result<(), sqlx
     Ok(())
 }
 
-pub async fn reserve_physical_book(pool: &SqlitePool, user_id: u32, copy_id: u32, start_date: &str, end_date: &str) -> Result<(), sqlx::Error> {
+pub async fn reserve_physical_book(pool: &SqlitePool, user_id: u32, copy_id: u32, start_date: OffsetDateTime, end_date: OffsetDateTime) -> Result<bool, sqlx::Error> {
+    let Some(physical_copy) = get_physical_book(pool, copy_id).await? else {
+        return Ok(false);
+    };
+    
+    for reservation in physical_copy.reservations {
+        if reservation.intersects(start_date, end_date) {
+            return Ok(false);
+        }
+    }
     let now = UtcDateTime::now();
     let reservation_id: u32 = sqlx::query_scalar("
         INSERT INTO Reservation (user, created_at, start_date, end_date)
         VALUES (?, ?, ?, ?)
         RETURNING id").bind(user_id).bind(now.unix_timestamp()).bind(start_date).bind(end_date)
         .fetch_one(pool).await?;
-    
-    sqlx::query("
-        UPDATE PhysicalBook
-        SET reservation = ?
-        WHERE id = ?").bind(reservation_id).bind(copy_id).execute(pool).await?;
 
-    Ok(())
+    sqlx::query("
+        INSERT INTO BookReservationMatch (physical_book, reservation)
+        VALUES (?, ?)").bind(copy_id).bind(reservation_id).execute(pool).await?;
+
+    Ok(true)
 }
 
 pub async fn get_reservation(pool: &SqlitePool, id: u32) -> Result<Option<types::ReservationStatus>, sqlx::Error> {
@@ -90,15 +105,6 @@ pub async fn get_reservation(pool: &SqlitePool, id: u32) -> Result<Option<types:
         FROM Reservation
         WHERE id = ?").bind(id).fetch_optional(pool).await?;
     Ok(reservation)
-}
-
-pub async fn edit_reservation(pool: &SqlitePool, id: u32, start_date: &str, end_date: &str) -> Result<(), sqlx::Error> {
-    sqlx::query("
-        UPDATE Reservation
-        SET start_date = ?,
-            end_date = ?
-        WHERE id = ?").bind(start_date).bind(end_date).bind(id).execute(pool).await?;
-    Ok(())
 }
 
 pub async fn remove_reservation(pool: &SqlitePool, id: u32) -> Result<(), sqlx::Error> {
@@ -149,8 +155,8 @@ pub async fn get_or_create_shelf(pool: &SqlitePool, name: &str) -> Result<Option
 
 pub async fn create_physical_book(pool: &SqlitePool, book: u32, shelf: u32) -> Result<(), sqlx::Error> {
     sqlx::query("
-        INSERT INTO PhysicalBook (book, shelf, reservation)
-        VALUES (?, ?, NULL)")
+        INSERT INTO PhysicalBook (book, shelf)
+        VALUES (?, ?)")
         .bind(book).bind(shelf).execute(pool).await?;
     Ok(())
 }

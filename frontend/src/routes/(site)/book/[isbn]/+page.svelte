@@ -8,7 +8,7 @@
   import { buttonVariants } from "$lib/components/ui/button/index.js";
   import Button from "$lib/components/ui/button/button.svelte";
   import PlusIcon from "@lucide/svelte/icons/plus";
-  import { getLocalTimeZone, today } from "@internationalized/date";
+  import { getLocalTimeZone, now, parseAbsoluteToLocal, today, ZonedDateTime, type DateValue } from "@internationalized/date";
   import { RangeCalendar } from "$lib/components/ui/range-calendar/index.js";
   import ShelfSelector from "$lib/components/ShelfSelector.svelte";
   import PhysicalBookSelector from './PhysicalBookSelector.svelte';
@@ -21,7 +21,7 @@
 
   let selectedShelf = $state("");
 
-  const start = today(getLocalTimeZone());
+  const start = now(getLocalTimeZone()).set({hour: 12, minute: 0, second: 0, millisecond: 0});
   const end = start.add({ days: 7 });
  
   let reservationDates = $state({
@@ -29,9 +29,22 @@
     end
   });
 
+  function isDateUnavailable(date: DateValue): boolean {
+    if (selectedCopy) {
+      if (selectedCopy.reservation) {
+      const start = parseAbsoluteToLocal(selectedCopy.reservation.start_date);
+      const end = parseAbsoluteToLocal(selectedCopy.reservation.end_date);
+        if (start && end) {
+          return date.compare(start) >= 0 && date.compare(end) <= 0;
+        }
+      }
+    }
+    return false;
+  }
+
   let reservationDuration = $derived.by(() => {
     if (reservationDates.start && reservationDates.end) {
-      return reservationDates.end.compare(reservationDates.start)
+      return Math.round(reservationDates.end.compare(reservationDates.start) / (24 * 60 * 60 * 1000));
     }
     return null;
   })
@@ -43,12 +56,19 @@
 
   async function reserveCopy() {
     pendingReservation = true;
+    let start_date = reservationDates?.start?.toAbsoluteString();
+    let end_date = reservationDates?.end?.toAbsoluteString();
+
+    if (!start_date || !end_date) {
+      return 
+    }
+
     const response = await fetch('/api/book-operations/reserve-copy', {
   		method: 'POST',
   		body: JSON.stringify({
         copy_id: selectedCopyID,
-        start_date: reservationDates?.start.toString(),
-        end_date: reservationDates?.end.toString(),
+        start_date,
+        end_date,
         }),
   		headers: {
   			'content-type': 'application/json'
@@ -145,7 +165,7 @@
       <Drawer.Title>Reservera bok</Drawer.Title>
     </Drawer.Header>
     <div class="flex flex-col justify-start items-center h-full">
-      <RangeCalendar bind:value={reservationDates} />
+      <RangeCalendar {isDateUnavailable} bind:value={reservationDates} />
       <div class="flex flex-col gap-2 items-center">
         
         <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
