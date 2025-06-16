@@ -87,6 +87,9 @@
 						{#each month.weeks as weekDates (weekDates)}
 							<RangeCalendar.GridRow class="mt-2 w-full">
 								{#each weekDates as date (date)}
+									<!--
+									<RangeCalendar.Cell {date} month={month.value} class="!bg-red-200 {borderRounding(date)}">
+                  -->
 									<RangeCalendar.Cell {date} month={month.value} class={borderRounding(date)}>
 										<RangeCalendar.Day/>
 									</RangeCalendar.Cell>

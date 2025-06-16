@@ -23,8 +23,8 @@ async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
     let database_url = env::var("DATABASE_URL").unwrap();
 
     let db_options = SqliteConnectOptions::from_str(&database_url)?
-        .create_if_missing(true);
-        //.extension("backend/spellfix1");
+        .create_if_missing(true)
+        .extension("backend/spellfix1");
 
     let pool = SqlitePool::connect_with(db_options).await?;
 

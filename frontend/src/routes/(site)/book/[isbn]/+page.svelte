@@ -12,6 +12,7 @@
   import { RangeCalendar } from "$lib/components/ui/range-calendar/index.js";
   import ShelfSelector from "$lib/components/ShelfSelector.svelte";
   import PhysicalBookSelector from './PhysicalBookSelector.svelte';
+  import ReservationCalendar from './ReservationCalendar.svelte';
  
 	let { data }: PageProps = $props();
 
@@ -51,6 +52,8 @@
 
   let selectedCopy: any = $state(undefined);
   let selectedCopyID = $derived(selectedCopy?.id);
+
+  let reservations = $derived(selectedCopy?.reservations ?? []);
 
   let pendingReservation = $state(false);
 
@@ -206,3 +209,7 @@
     </div>
   </Drawer.Content>
 </Drawer.Root>
+
+<PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
+
+<ReservationCalendar {reservations}/>

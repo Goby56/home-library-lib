@@ -15,9 +15,16 @@ use time::OffsetDateTime;
 // }
 
 #[derive(sqlx::FromRow, serde::Serialize)]
-pub struct ReservationStatus {
+pub struct User {
     pub id: u32,
-    pub user: u32,
+    pub username: String,
+    pub personal_color: String,
+}
+
+#[derive(serde::Serialize)]
+pub struct Reservation {
+    pub id: u32,
+    pub user: User,
     pub created_at: i64,
     #[serde(with = "time::serde::iso8601")]
     pub start_date:  OffsetDateTime,
@@ -25,7 +32,7 @@ pub struct ReservationStatus {
     pub end_date: OffsetDateTime,
 }
 
-impl ReservationStatus {
+impl Reservation {
     pub fn intersects(&self, start: OffsetDateTime, end: OffsetDateTime) -> bool {
         // Reservations can start and end on the same date
         self.start_date < end && start < self.end_date 
@@ -55,5 +62,5 @@ pub struct Book {
 pub struct PhysicalBook {
     pub id: u32,
     pub shelf: Shelf,
-    pub reservations: Vec<ReservationStatus>,
+    pub reservations: Vec<Reservation>,
 }

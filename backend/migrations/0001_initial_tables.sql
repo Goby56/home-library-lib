@@ -64,5 +64,6 @@ CREATE TABLE "User" (
     "id"    INTEGER NOT NULL UNIQUE,
     "username"  TEXT NOT NULL UNIQUE,
     "password_hash" TEXT NOT NULL,
+    "personal_color" TEXT NOT NULL UNIQUE,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );

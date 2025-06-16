@@ -9,6 +9,8 @@ use argon2::{
 use sqlx::SqlitePool;
 use time::{OffsetDateTime, UtcDateTime};
 
+use rand::{self, Rng};
+
 use crate::types;
 
 pub async fn get_physical_copies(pool: &SqlitePool, isbn: &str) -> Result<(Option<types::Book>, Vec<types::PhysicalBook>), sqlx::Error>  {
@@ -99,12 +101,34 @@ pub async fn reserve_physical_book(pool: &SqlitePool, user_id: u32, copy_id: u32
     Ok(true)
 }
 
-pub async fn get_reservation(pool: &SqlitePool, id: u32) -> Result<Option<types::ReservationStatus>, sqlx::Error> {
-    let reservation: Option<types::ReservationStatus> = sqlx::query_as("
+#[derive(sqlx::FromRow, serde::Serialize)]
+struct ReservationIntermediate {
+    pub id: u32,
+    pub user: u32,
+    pub created_at: i64,
+    #[serde(with = "time::serde::iso8601")]
+    pub start_date:  OffsetDateTime,
+    #[serde(with = "time::serde::iso8601")]
+    pub end_date: OffsetDateTime,
+}
+
+pub async fn get_reservation(pool: &SqlitePool, id: u32) -> Result<Option<types::Reservation>, sqlx::Error> {
+    let reservation: Option<ReservationIntermediate> = sqlx::query_as("
         SELECT id, user, created_at, start_date, end_date
         FROM Reservation
         WHERE id = ?").bind(id).fetch_optional(pool).await?;
-    Ok(reservation)
+    let Some(reservation) = reservation else {
+        return Ok(None);
+    };
+    let user = get_user(pool, reservation.user).await?;
+
+    Ok(Some(types::Reservation {
+        id: reservation.id, 
+        user, 
+        created_at: reservation.created_at, 
+        start_date: reservation.start_date,
+        end_date: reservation.end_date
+    }))
 }
 
 pub async fn remove_reservation(pool: &SqlitePool, id: u32) -> Result<(), sqlx::Error> {
@@ -276,6 +300,14 @@ pub async fn get_books(pool: &SqlitePool, _search_str: Option<&str>,
     }).collect())
 }
 
+pub async fn get_user(pool: &SqlitePool, id: u32) -> Result<types::User, sqlx::Error> {
+    let user: types::User = sqlx::query_as("
+        SELECT id, name, personal_color
+        FROM User
+        WHERE id = ?").bind(id).fetch_one(pool).await?;
+    Ok(user)
+}
+
 pub async fn login_user(pool: &SqlitePool, username: &str, password: &str) -> Result<Option<u32>, sqlx::Error> {
     let (id, password_hash): (u32, String) = sqlx::query_as("
         SELECT id, password_hash
@@ -291,13 +323,16 @@ pub async fn login_user(pool: &SqlitePool, username: &str, password: &str) -> Re
 
 pub async fn register_user(pool: &SqlitePool, username: &str, password: &str) -> Result<Option<u32>, sqlx::Error> {
     let salt = SaltString::generate(&mut OsRng);
+    
+    let rgb: [u8;3] = rand::rng().random();
+    let personal_color = hex::encode(rgb);
 
     if let Ok(password_hash) = Argon2::default().hash_password(password.as_bytes(), &salt) {
         let user_id: Option<u32> = sqlx::query_scalar("
-            INSERT INTO User (username, password_hash)
-            VALUES (?, ?)
+            INSERT INTO User (username, password_hash, personal_color)
+            VALUES (?, ?, ?)
             ON CONFLICT (username) DO NOTHING
-            RETURNING id").bind(username).bind(password_hash.to_string()).fetch_optional(pool).await?;
+            RETURNING id").bind(username).bind(password_hash.to_string()).bind(personal_color).fetch_optional(pool).await?;
         return Ok(user_id);
     }
     Ok(None)

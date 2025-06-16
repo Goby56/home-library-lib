@@ -1,9 +1,12 @@
 <script lang="ts">
   import RangeCalendar from "$lib/components/custom-range-calendar/wrapper/range-calendar.svelte";
-  import { CalendarDate, type DateValue } from "@internationalized/date";
+  import { CalendarDate, parseAbsoluteToLocal, parseDate, parseDateTime, parseZonedDateTime, type DateValue } from "@internationalized/date";
   import type { DateRange } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
   import type { HighlightedRange } from "$lib/components/custom-range-calendar/base/types";
+
+  let { reservations }: { reservations: any[] } = $props();
+
   let value = $state<DateRange>({
     start: undefined,
     end: undefined,
@@ -13,20 +16,15 @@
 
   let numberOfMonths = $derived(isDesktop.current ? 5 : 2);
 
-  let reservations: HighlightedRange[] = [
-    {
-      start: new CalendarDate(2025, 6, 11),
-      end: new CalendarDate(2025, 6, 28),
-    },
-    {
-      start: new CalendarDate(2025, 7, 5),
-      end: new CalendarDate(2025, 7, 13),
-    }
-  ]
+  let ranges: HighlightedRange[] = $derived(reservations.map(rsv => ({
+      start: parseAbsoluteToLocal(rsv.start_date),
+      end: parseAbsoluteToLocal(rsv.end_date),
+    })
+  ));
 
   function onClickHightlight(date: DateValue, highlight: number) {
     console.log(highlight);
   }
 
 </script>
-<RangeCalendar bind:value class="rounded-lg" ranges={reservations} learnMore={onClickHightlight} fixedWeeks={false} {numberOfMonths}/>
+<RangeCalendar bind:value class="rounded-lg" {ranges} learnMore={onClickHightlight} fixedWeeks={false} {numberOfMonths}/>

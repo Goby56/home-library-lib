@@ -118,7 +118,7 @@ pub async fn edit_reservation(state: Data<AppState>, req: HttpRequest, path: web
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
     
-    if user_id != reservation.user {
+    if user_id != reservation.user.id {
         return Err(actix_web::error::ErrorForbidden("User does not own reservation"))
     }
 
@@ -191,6 +191,14 @@ struct UserCredentials {
 #[serde(transparent)]
 struct SessionResponse {
     token: String,
+}
+
+#[get("/get_user/{id}")]
+pub async fn get_user(state: Data<AppState>, path: web::Path<(u32,)>) -> Result<impl Responder> {
+    match database::get_user(&state.db, path.into_inner().0).await {
+        Ok(user) => Ok(web::Json(user)),
+        Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+    }
 }
 
 #[post("/login_user")]

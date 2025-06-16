@@ -215,6 +215,7 @@ export type CalendarCellPropsWithoutHTML = WithChild<{
      * The month DateValue that this cell is being rendered in.
      */
     month: DateValue;
+
 }, CalendarCellSnippetProps>;
 export type CalendarCellProps = CalendarCellPropsWithoutHTML & Without<BitsPrimitiveTdAttributes, CalendarCellPropsWithoutHTML>;
 export type CalendarGridPropsWithoutHTML = WithChild;
