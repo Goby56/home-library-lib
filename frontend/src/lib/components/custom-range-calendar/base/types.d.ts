@@ -16,6 +16,12 @@ export type RangeCalendarRootPropsWithoutHTML = WithChild<{
      */
     ranges?: HighlightedRange[];
     /**
+     * A callback function called when clicking on a highlighted date.
+     *
+     * The callback will receive the index of the range which was clicked and the date.
+     */
+    learnMore?: (date: DateValue, highlight: number) => void;
+    /**
      * The value of the selected date range.
      * @bindable
      */

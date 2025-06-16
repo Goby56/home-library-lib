@@ -4,6 +4,7 @@
 	import * as RangeCalendar from "./index.js";
 	import { cn } from "$lib/utils.js";
   import { MediaQuery } from "svelte/reactivity";
+  import type { DateValue, DateTimeDuration } from "@internationalized/date";
 
 	let {
 		ref = $bindable(null),
@@ -13,6 +14,8 @@
 		weekdayFormat = "short",
     weekStartsOn = 1,
     locale= "sv",
+    fixedWeeks = true,
+    ranges = [],
 		class: className,
 		...restProps
 	}: WithoutChildrenOrChild<RangeCalendarPrimitive.RootProps> = $props();
@@ -33,13 +36,26 @@
     "November",
     "December",
   ];
+
+  function borderRounding(date: DateValue): string {
+    if (date.subtract({ days: 1 }).month != date.month) {
+      return "rounded-l-md";
+    }
+    if (date.add({ days: 1 }).month != date.month) {
+      return "rounded-r-md";
+    }
+    return "";
+  }
+
 </script>
 
 <RangeCalendarPrimitive.Root
 	bind:ref
 	bind:value
 	bind:placeholder
+  {ranges}
   {locale}
+  {fixedWeeks}
 	{weekdayFormat}
   {weekStartsOn}
   {numberOfMonths}
@@ -71,8 +87,8 @@
 						{#each month.weeks as weekDates (weekDates)}
 							<RangeCalendar.GridRow class="mt-2 w-full">
 								{#each weekDates as date (date)}
-									<RangeCalendar.Cell {date} month={month.value} class={date.month == month.value.month ? "" : "opacity-0"}>
-										<RangeCalendar.Day class={date.month == month.value.month ? "" : "hidden"}/>
+									<RangeCalendar.Cell {date} month={month.value} class={borderRounding(date)}>
+										<RangeCalendar.Day/>
 									</RangeCalendar.Cell>
 								{/each}
 							</RangeCalendar.GridRow>

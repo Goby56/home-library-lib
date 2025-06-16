@@ -246,29 +246,40 @@ export class RangeCalendarRootState {
     });
     fullCalendarLabel = $derived.by(() => `${this.opts.calendarLabel.current} ${this.headingValue}`);
     isSelectionStart(date) {
-        const ranges = this.opts.ranges.current;
+        const ranges = this.opts.ranges.current ?? [];
         for (let i = 0; i < ranges.length; i++) {
             if (isSameDay(date, ranges[i].start)) {
                 return true;
             }
         }
-        return false;
+        if (!this.opts.startValue.current)
+            return false;
+        return isSameDay(date, this.opts.startValue.current);
     }
     isSelectionEnd(date) {
-        const ranges = this.opts.ranges.current;
+        const ranges = this.opts.ranges.current ?? [];
         for (let i = 0; i < ranges.length; i++) {
             if (isSameDay(date, ranges[i].end)) {
                 return true;
             }
         }
-        return false;
+        if (!this.opts.endValue.current)
+            return false;
+        return isSameDay(date, this.opts.endValue.current);
     }
     isSelected(date) {
-        const ranges = this.opts.ranges.current;
+        const ranges = this.opts.ranges.current ?? [];
         for (let i = 0; i < ranges.length; i++) {
             if (isBetweenInclusive(date, ranges[i].start, ranges[i].end)) {
                 return true;
             }
+        }
+        if (this.opts.startValue.current && isSameDay(this.opts.startValue.current, date))
+            return true;
+        if (this.opts.endValue.current && isSameDay(this.opts.endValue.current, date))
+            return true;
+        if (this.opts.startValue.current && this.opts.endValue.current) {
+            return isBetweenInclusive(date, this.opts.startValue.current, this.opts.endValue.current);
         }
         return false;
     }
@@ -313,6 +324,15 @@ export class RangeCalendarRootState {
     handleCellClick(e, date) {
         if (this.isDateDisabled(date) || this.isDateUnavailable(date))
             return;
+        if (this.opts.learnMore.current) {
+            const ranges = this.opts.ranges.current ?? [];
+            for (let i = 0; i < ranges.length; i++) {
+                if (isBetweenInclusive(date, ranges[i].start, ranges[i].end)) {
+                    this.opts.learnMore.current(date, i);
+                    return;
+                }
+            }
+        }
         const prevLastPressedDate = this.lastPressedDateValue;
         this.lastPressedDateValue = date;
         if (this.opts.startValue.current && this.highlightedRange === null) {

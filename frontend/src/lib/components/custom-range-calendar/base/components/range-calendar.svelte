@@ -35,6 +35,7 @@
 		onStartValueChange = noop,
 		onEndValueChange = noop,
     ranges = [],
+    learnMore = undefined,
 		...restProps
 	}: RangeCalendarRootProps = $props();
 
@@ -85,6 +86,7 @@
       () => ranges,
       (v) => (ranges = v)
     ),
+    learnMore: box.with(() => learnMore),
 		value: box.with(
 			() => value!,
 			(v) => {

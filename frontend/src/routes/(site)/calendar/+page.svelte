@@ -1,6 +1,6 @@
 <script lang="ts">
   import RangeCalendar from "$lib/components/custom-range-calendar/wrapper/range-calendar.svelte";
-  import { CalendarDate } from "@internationalized/date";
+  import { CalendarDate, type DateValue } from "@internationalized/date";
   import type { DateRange } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
   import type { HighlightedRange } from "$lib/components/custom-range-calendar/base/types";
@@ -24,5 +24,9 @@
     }
   ]
 
+  function onClickHightlight(date: DateValue, highlight: number) {
+    console.log(highlight);
+  }
+
 </script>
-<RangeCalendar bind:value class="rounded-lg" ranges={reservations} fixedWeeks={false} {numberOfMonths}/>
+<RangeCalendar bind:value class="rounded-lg" ranges={reservations} learnMore={onClickHightlight} fixedWeeks={false} {numberOfMonths}/>

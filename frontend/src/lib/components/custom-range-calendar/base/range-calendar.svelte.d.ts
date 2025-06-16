@@ -10,6 +10,7 @@ type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 type RangeCalendarRootStateProps = WithRefProps<WritableBoxedValues<{
     ranges: HighlightedRange[];
+    learnMore: (date: DateValue, highlight: number) => void | undefined;
     value: DateRange;
     placeholder: DateValue;
     startValue: DateValue | undefined;
