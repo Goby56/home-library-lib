@@ -1,5 +1,5 @@
 <script lang="ts">
-  import RangeCalendar from "$lib/components/ui/range-calendar/custom-calendar.svelte";
+  import RangeCalendar from "$lib/components/custom-range-calendar/wrapper/custom-calendar.svelte";
   import { CalendarDate } from "@internationalized/date";
   import type { DateRange } from "bits-ui";
     import { MediaQuery } from "svelte/reactivity";
