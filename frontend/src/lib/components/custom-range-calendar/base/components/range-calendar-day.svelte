@@ -2,7 +2,7 @@
 	import { box, mergeProps } from "svelte-toolbelt";
 	import type { RangeCalendarDayProps } from "../types.js";
 	import { useRangeCalendarDay } from "../range-calendar.svelte.js";
-	import { useId } from "../../../internal/use-id.js";
+	import { useId } from "bits-ui";
 
 	let {
 		children,

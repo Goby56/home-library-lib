@@ -2,7 +2,9 @@
 	import { RangeCalendar as RangeCalendarPrimitive, type WithoutChildrenOrChild } from "bits-ui";
 	import * as RangeCalendar from "./index.js";
 	import { cn } from "$lib/utils.js";
-    import { MediaQuery } from "svelte/reactivity";
+  import { MediaQuery } from "svelte/reactivity";
+  import type { DateRange } from "bits-ui";
+    import { CalendarDate } from "@internationalized/date";
 
 	let {
 		ref = $bindable(null),
@@ -18,6 +20,21 @@
 	}: WithoutChildrenOrChild<RangeCalendarPrimitive.RootProps> = $props();
   
   const isDesktop = new MediaQuery("(min-width: 768px)");
+
+  let reservations: DateRange[] = [
+    {
+      start: new CalendarDate(2025, 6, 12),
+      end: new CalendarDate(2025, 7, 15),
+    },
+    {
+      start: new CalendarDate(2025, 6, 12),
+      end: new CalendarDate(2025, 7, 15),
+    },
+    {
+      start: new CalendarDate(2025, 6, 12),
+      end: new CalendarDate(2025, 7, 15),
+    },
+  ]
 
   const MONTHS = [
     "Januari",

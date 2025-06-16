@@ -3,9 +3,9 @@
 	import { type DateValue } from "@internationalized/date";
 	import type { RangeCalendarRootProps } from "../types.js";
 	import { useRangeCalendarRoot } from "../range-calendar.svelte.js";
-	import { noop } from "../../../internal/noop.js";
-	import { useId } from "../../../internal/use-id.js";
-	import { getDefaultDate } from "../../../internal/date-time/utils.js";
+	import { noop } from "../../internal/noop.js";
+	import { useId } from "bits-ui";
+	import { getDefaultDate } from "../../internal/date-time-utils.js";
 	import { watch } from "runed";
 
 	let {

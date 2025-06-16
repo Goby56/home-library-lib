@@ -3,5 +3,5 @@ CREATE TABLE "Session" (
     "secret_hash" TEXT NOT NULL,
     "created_at" INTEGER NOT NULL,
     "user" INTEGER NOT NULL,
-    FOREIGN KEY("user") REFERENCES "User"("id")
+    FOREIGN KEY("user") REFERENCES "User"("id") ON DELETE CASCADE
 );
