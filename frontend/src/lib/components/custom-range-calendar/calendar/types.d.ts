@@ -1,29 +1,13 @@
 import type { DateValue } from "@internationalized/date";
 import type { OnChangeFn, WithChild, Without } from "../internal/types.js";
-import type { DateMatcher, DateRange, Month, BitsPrimitiveDivAttributes } from "bits-ui";
-export type RangeCalendarRootSnippetProps = {
+import type { BitsPrimitiveButtonAttributes, BitsPrimitiveDivAttributes, BitsPrimitiveHeaderAttributes, BitsPrimitiveTableAttributes, BitsPrimitiveTbodyAttributes, BitsPrimitiveTdAttributes, BitsPrimitiveThAttributes, BitsPrimitiveTheadAttributes, BitsPrimitiveTrAttributes } from "../../shared/attributes.js";
+import type { DateMatcher, Month } from "bits-ui";
+type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type CalendarRootSnippetProps = {
     months: Month<DateValue>[];
     weekdays: string[];
 };
-export type HighlightedRange = {
-    start: DateValue,
-    end: DateValue,
-
-}
-export type RangeCalendarRootPropsWithoutHTML = WithChild<{
-    /**
-     * Ranges to be highlighted
-     */
-    ranges?: HighlightedRange[];
-    /**
-     * The value of the selected date range.
-     * @bindable
-     */
-    value?: DateRange;
-    /**
-     * A callback function called when the value changes.
-     */
-    onValueChange?: OnChangeFn<DateRange>;
+type CalendarBaseRootPropsWithoutHTML = {
     /**
      * The placeholder date, used to control the view of the
      * calendar when no value is present.
@@ -78,7 +62,7 @@ export type RangeCalendarRootPropsWithoutHTML = WithChild<{
      *
      * @defaultValue 0 (Sunday)
      */
-    weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+    weekStartsOn?: WeekStartsOn;
     /**
      * How the string representation of the weekdays provided via the `weekdays` state store
      * should be formatted.
@@ -164,6 +148,11 @@ export type RangeCalendarRootPropsWithoutHTML = WithChild<{
      */
     readonly?: boolean;
     /**
+     * If `true`, the calendar will focus the selected day, today, or the first day of the month
+     * in that order depending on what is visible when the calendar is mounted.
+     */
+    initialFocus?: boolean;
+    /**
      * Whether to disable the selection of days outside the current month. By default,
      * days outside the current month are rendered to fill the calendar grid, but they
      * are not selectable. Setting this prop to `true` will disable this behavior.
@@ -171,18 +160,90 @@ export type RangeCalendarRootPropsWithoutHTML = WithChild<{
      * @defaultValue false
      */
     disableDaysOutsideMonth?: boolean;
+};
+export type CalendarSingleRootPropsWithoutHTML = {
     /**
-     * A callback function called when the start value changes. This doesn't necessarily mean
-     * the `value` has updated and should be used to apply cosmetic changes to the calendar when
-     * only part of the value is changed/completed.
+     * The type of calendar. If set to `'single'`, the calendar will
+     * only allow a single date to be selected. If set to `'multiple'`,
+     * the calendar will allow multiple dates to be selected.
      */
-    onStartValueChange?: OnChangeFn<DateValue | undefined>;
+    type: "single";
     /**
-     * A callback function called when the end value changes. This doesn't necessarily mean
-     * the `value` has updated and should be used to apply cosmetic changes to the calendar when
-     * only part of the value is changed/completed.
+     * The value of the selected date in the calendar.
      */
-    onEndValueChange?: OnChangeFn<DateValue | undefined>;
-}, RangeCalendarRootSnippetProps>;
-export type RangeCalendarRootProps = RangeCalendarRootPropsWithoutHTML & Without<BitsPrimitiveDivAttributes, RangeCalendarRootPropsWithoutHTML>;
-export type { CalendarPrevButtonProps as RangeCalendarPrevButtonProps, CalendarPrevButtonPropsWithoutHTML as RangeCalendarPrevButtonPropsWithoutHTML, CalendarNextButtonProps as RangeCalendarNextButtonProps, CalendarNextButtonPropsWithoutHTML as RangeCalendarNextButtonPropsWithoutHTML, CalendarHeadingProps as RangeCalendarHeadingProps, CalendarHeadingPropsWithoutHTML as RangeCalendarHeadingPropsWithoutHTML, CalendarGridProps as RangeCalendarGridProps, CalendarGridPropsWithoutHTML as RangeCalendarGridPropsWithoutHTML, CalendarCellProps as RangeCalendarCellProps, CalendarCellPropsWithoutHTML as RangeCalendarCellPropsWithoutHTML, CalendarDayProps as RangeCalendarDayProps, CalendarDayPropsWithoutHTML as RangeCalendarDayPropsWithoutHTML, CalendarGridBodyProps as RangeCalendarGridBodyProps, CalendarGridBodyPropsWithoutHTML as RangeCalendarGridBodyPropsWithoutHTML, CalendarGridHeadProps as RangeCalendarGridHeadProps, CalendarGridHeadPropsWithoutHTML as RangeCalendarGridHeadPropsWithoutHTML, CalendarGridRowProps as RangeCalendarGridRowProps, CalendarGridRowPropsWithoutHTML as RangeCalendarGridRowPropsWithoutHTML, CalendarHeadCellProps as RangeCalendarHeadCellProps, CalendarHeadCellPropsWithoutHTML as RangeCalendarHeadCellPropsWithoutHTML, CalendarHeaderProps as RangeCalendarHeaderProps, CalendarHeaderPropsWithoutHTML as RangeCalendarHeaderPropsWithoutHTML, } from "../calendar/types.js";
+    value?: DateValue;
+    /**
+     * A callback function called when the value changes.
+     */
+    onValueChange?: OnChangeFn<DateValue | undefined>;
+};
+export type CalendarMultipleRootPropsWithoutHTML = {
+    /**
+     * The type of calendar. If set to `'single'`, the calendar will
+     * only allow a single date to be selected. If set to `'multiple'`,
+     * the calendar will allow multiple dates to be selected.
+     */
+    type: "multiple";
+    /**
+     * The value of the selected dates in the calendar.
+     */
+    value?: DateValue[];
+    /**
+     * A callback function called when the value changes.
+     */
+    onValueChange?: OnChangeFn<DateValue[]>;
+};
+export type _CalendarSingleRootPropsWithoutHTML = CalendarBaseRootPropsWithoutHTML & CalendarSingleRootPropsWithoutHTML;
+export type CalendarSingleRootProps = _CalendarSingleRootPropsWithoutHTML & Without<BitsPrimitiveDivAttributes, _CalendarSingleRootPropsWithoutHTML>;
+export type _CalendarMultipleRootPropsWithoutHTML = CalendarBaseRootPropsWithoutHTML & CalendarMultipleRootPropsWithoutHTML;
+export type CalendarMultipleRootProps = _CalendarMultipleRootPropsWithoutHTML & Without<BitsPrimitiveDivAttributes, _CalendarMultipleRootPropsWithoutHTML>;
+export type CalendarRootPropsWithoutHTML = CalendarBaseRootPropsWithoutHTML & (WithChild<CalendarSingleRootPropsWithoutHTML, CalendarRootSnippetProps> | WithChild<CalendarMultipleRootPropsWithoutHTML, CalendarRootSnippetProps>);
+export type CalendarRootProps = CalendarRootPropsWithoutHTML & Without<BitsPrimitiveDivAttributes, CalendarRootPropsWithoutHTML>;
+export type CalendarCellSnippetProps = {
+    disabled: boolean;
+    unavailable: boolean;
+    selected: boolean;
+};
+export type CalendarCellPropsWithoutHTML = WithChild<{
+    /**
+     * The date value of the cell.
+     *
+     * @required
+     */
+    date: DateValue;
+    /**
+     * The month DateValue that this cell is being rendered in.
+     */
+    month: DateValue;
+}, CalendarCellSnippetProps>;
+export type CalendarCellProps = CalendarCellPropsWithoutHTML & Without<BitsPrimitiveTdAttributes, CalendarCellPropsWithoutHTML>;
+export type CalendarGridPropsWithoutHTML = WithChild;
+export type CalendarGridProps = CalendarGridPropsWithoutHTML & Without<BitsPrimitiveTableAttributes, CalendarGridPropsWithoutHTML>;
+export type CalendarGridBodyPropsWithoutHTML = WithChild;
+export type CalendarGridBodyProps = CalendarGridBodyPropsWithoutHTML & Without<BitsPrimitiveTbodyAttributes, CalendarGridBodyPropsWithoutHTML>;
+export type CalendarGridHeadPropsWithoutHTML = WithChild;
+export type CalendarGridHeadProps = CalendarGridHeadPropsWithoutHTML & Without<BitsPrimitiveTheadAttributes, CalendarGridHeadPropsWithoutHTML>;
+export type CalendarHeadCellPropsWithoutHTML = WithChild;
+export type CalendarHeadCellProps = CalendarHeadCellPropsWithoutHTML & Without<BitsPrimitiveThAttributes, CalendarHeadCellPropsWithoutHTML>;
+export type CalendarGridRowPropsWithoutHTML = WithChild;
+export type CalendarGridRowProps = CalendarGridRowPropsWithoutHTML & Without<BitsPrimitiveTrAttributes, CalendarGridRowPropsWithoutHTML>;
+export type CalendarHeaderPropsWithoutHTML = WithChild;
+export type CalendarHeaderProps = CalendarHeaderPropsWithoutHTML & Without<BitsPrimitiveHeaderAttributes, CalendarHeaderPropsWithoutHTML>;
+export type CalendarHeadingSnippetProps = {
+    headingValue: string;
+};
+export type CalendarHeadingPropsWithoutHTML = WithChild<{}, CalendarHeadingSnippetProps>;
+export type CalendarDaySnippetProps = {
+    disabled: boolean;
+    unavailable: boolean;
+    selected: boolean;
+    day: string;
+};
+export type CalendarDayPropsWithoutHTML = WithChild<{}, CalendarDaySnippetProps>;
+export type CalendarDayProps = CalendarDayPropsWithoutHTML & Without<BitsPrimitiveDivAttributes, CalendarDayPropsWithoutHTML>;
+export type CalendarHeadingProps = CalendarHeadingPropsWithoutHTML & Without<BitsPrimitiveDivAttributes, CalendarHeadingPropsWithoutHTML>;
+export type CalendarNextButtonPropsWithoutHTML = WithChild;
+export type CalendarNextButtonProps = CalendarNextButtonPropsWithoutHTML & Without<BitsPrimitiveButtonAttributes, CalendarNextButtonPropsWithoutHTML>;
+export type CalendarPrevButtonPropsWithoutHTML = WithChild;
+export type CalendarPrevButtonProps = CalendarPrevButtonPropsWithoutHTML & Without<BitsPrimitiveButtonAttributes, CalendarPrevButtonPropsWithoutHTML>;
+export {};

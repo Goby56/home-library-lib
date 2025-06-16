@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { box, mergeProps } from "svelte-toolbelt";
 	import { type DateValue } from "@internationalized/date";
-	import type { RangeCalendarRootProps } from "../types.js";
-	import { useRangeCalendarRoot } from "../range-calendar.svelte.js";
-	import { noop } from "../../internal/noop.js";
+	import { useCalendarRoot } from "../calendar.svelte.js";
+	import type { CalendarRootProps } from "../types.js";
 	import { useId } from "bits-ui";
+	import { noop } from "../../internal/noop.js";
 	import { getDefaultDate } from "../../internal/date-time/utils.js";
 	import { watch } from "runed";
 
 	let {
-		children,
 		child,
+		children,
 		id = useId(),
 		ref = $bindable(null),
 		value = $bindable(),
@@ -31,17 +31,14 @@
 		minValue = undefined,
 		maxValue = undefined,
 		preventDeselect = false,
+		type,
 		disableDaysOutsideMonth = true,
-		onStartValueChange = noop,
-		onEndValueChange = noop,
+		initialFocus = false,
 		...restProps
-	}: RangeCalendarRootProps = $props();
-
-	let startValue = $state<DateValue | undefined>(value?.start);
-	let endValue = $state<DateValue | undefined>(value?.end);
+	}: CalendarRootProps = $props();
 
 	const defaultPlaceholder = getDefaultDate({
-		defaultValue: value?.start,
+		defaultValue: value,
 	});
 
 	function handleDefaultPlaceholder() {
@@ -61,7 +58,7 @@
 
 	function handleDefaultValue() {
 		if (value !== undefined) return;
-		value = { start: undefined, end: undefined };
+		value = type === "single" ? undefined : [];
 	}
 
 	// SSR
@@ -74,55 +71,44 @@
 		}
 	);
 
-	const rootState = useRangeCalendarRoot({
+	const rootState = useCalendarRoot({
 		id: box.with(() => id),
 		ref: box.with(
 			() => ref,
 			(v) => (ref = v)
 		),
-		value: box.with(
-			() => value!,
-			(v) => {
-				value = v;
-				onValueChange(v);
-			}
-		),
-		placeholder: box.with(
-			() => placeholder!,
-			(v) => {
-				placeholder = v;
-				onPlaceholderChange(v);
-			}
-		),
-		disabled: box.with(() => disabled),
-		readonly: box.with(() => readonly),
-		preventDeselect: box.with(() => preventDeselect),
-		minValue: box.with(() => minValue),
-		maxValue: box.with(() => maxValue),
-		isDateUnavailable: box.with(() => isDateUnavailable),
-		isDateDisabled: box.with(() => isDateDisabled),
-		pagedNavigation: box.with(() => pagedNavigation),
-		weekStartsOn: box.with(() => weekStartsOn),
 		weekdayFormat: box.with(() => weekdayFormat),
+		weekStartsOn: box.with(() => weekStartsOn),
+		pagedNavigation: box.with(() => pagedNavigation),
+		isDateDisabled: box.with(() => isDateDisabled),
+		isDateUnavailable: box.with(() => isDateUnavailable),
+		fixedWeeks: box.with(() => fixedWeeks),
 		numberOfMonths: box.with(() => numberOfMonths),
 		locale: box.with(() => locale),
 		calendarLabel: box.with(() => calendarLabel),
-		fixedWeeks: box.with(() => fixedWeeks),
+		readonly: box.with(() => readonly),
+		disabled: box.with(() => disabled),
+		minValue: box.with(() => minValue),
+		maxValue: box.with(() => maxValue),
 		disableDaysOutsideMonth: box.with(() => disableDaysOutsideMonth),
-		startValue: box.with(
-			() => startValue,
+		initialFocus: box.with(() => initialFocus),
+		placeholder: box.with(
+			() => placeholder as DateValue,
 			(v) => {
-				startValue = v;
-				onStartValueChange(v);
+				placeholder = v;
+				onPlaceholderChange(v as DateValue);
 			}
 		),
-		endValue: box.with(
-			() => endValue,
+		preventDeselect: box.with(() => preventDeselect),
+		value: box.with(
+			() => value,
 			(v) => {
-				endValue = v;
-				onEndValueChange(v);
+				value = v;
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				onValueChange(v as any);
 			}
 		),
+		type: box.with(() => type),
 		defaultPlaceholder,
 	});
 

@@ -2,12 +2,12 @@ import { getLocalTimeZone, isSameDay, isSameMonth, isToday, } from "@internation
 import { useRefById } from "svelte-toolbelt";
 import { Context, watch } from "runed";
 import { CalendarRootContext } from "../calendar/calendar.svelte.js";
-import { useId } from "../../internal/use-id.js";
-import { getAriaDisabled, getAriaSelected, getDataDisabled, getDataSelected, getDataUnavailable, } from "../../internal/attrs.js";
-import { getAnnouncer } from "../../internal/date-time/announcer.js";
-import { createFormatter } from "../../internal/date-time/formatter.js";
-import { createMonths, getCalendarElementProps, getCalendarHeadingValue, getIsNextButtonDisabled, getIsPrevButtonDisabled, getWeekdays, handleCalendarKeydown, handleCalendarNextPage, handleCalendarPrevPage, shiftCalendarFocus, useEnsureNonDisabledPlaceholder, useMonthViewOptionsSync, useMonthViewPlaceholderSync, } from "../../internal/date-time/calendar-helpers.svelte.js";
-import { areAllDaysBetweenValid, getDateValueType, isAfter, isBefore, isBetweenInclusive, toDate, } from "../../internal/date-time/utils.js";
+import { useId } from "bits-ui";
+import { getAriaDisabled, getAriaSelected, getDataDisabled, getDataSelected, getDataUnavailable, } from "../internal/attrs.js";
+import { getAnnouncer } from "../internal/date-time/announcer.js";
+import { createFormatter } from "../internal/date-time/formatter.js";
+import { createMonths, getCalendarElementProps, getCalendarHeadingValue, getIsNextButtonDisabled, getIsPrevButtonDisabled, getWeekdays, handleCalendarKeydown, handleCalendarNextPage, handleCalendarPrevPage, shiftCalendarFocus, useEnsureNonDisabledPlaceholder, useMonthViewOptionsSync, useMonthViewPlaceholderSync, } from "../internal/date-time/calendar-helpers.svelte.js";
+import { areAllDaysBetweenValid, getDateValueType, isAfter, isBefore, isBetweenInclusive, toDate, } from "../internal/date-time/utils.js";
 export class RangeCalendarRootState {
     opts;
     months = $state([]);
@@ -255,6 +255,7 @@ export class RangeCalendarRootState {
         return isSameDay(date, this.opts.endValue.current);
     }
     isSelected(date) {
+        // HEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEERE
         if (this.opts.startValue.current && isSameDay(this.opts.startValue.current, date))
             return true;
         if (this.opts.endValue.current && isSameDay(this.opts.endValue.current, date))

@@ -1,11 +1,12 @@
 import { type DateValue } from "@internationalized/date";
-import type { DateRange, Month } from "../../shared/index.js";
-import type { ReadableBoxedValues, WritableBoxedValues } from "../../internal/box.svelte.js";
-import type { BitsFocusEvent, BitsKeyboardEvent, BitsMouseEvent, WithRefProps } from "../../internal/types.js";
-import { type Announcer } from "../../internal/date-time/announcer.js";
-import { type Formatter } from "../../internal/date-time/formatter.js";
-import { type CalendarParts } from "../../internal/date-time/calendar-helpers.svelte.js";
-import type { WeekStartsOn } from "../../shared/date/types.js";
+import type { DateRange, Month } from "bits-ui";
+import type { ReadableBoxedValues, WritableBoxedValues } from "../internal/box.svelte.js";
+import type { BitsFocusEvent, BitsKeyboardEvent, BitsMouseEvent, WithRefProps } from "../internal/types.js";
+import { type Announcer } from "../internal/date-time/announcer.js";
+import { type Formatter } from "../internal/date-time/formatter.js";
+import { type CalendarParts } from "../internal/date-time/calendar-helpers.svelte.js";
+type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
 type RangeCalendarRootStateProps = WithRefProps<WritableBoxedValues<{
     value: DateRange;
     placeholder: DateValue;
