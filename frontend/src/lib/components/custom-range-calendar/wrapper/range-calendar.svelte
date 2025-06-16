@@ -3,7 +3,7 @@
 	import { RangeCalendar as RangeCalendarPrimitive } from "../base";
 	import * as RangeCalendar from "./index.js";
 	import { cn } from "$lib/utils.js";
-    import { MediaQuery } from "svelte/reactivity";
+  import { MediaQuery } from "svelte/reactivity";
 
 	let {
 		ref = $bindable(null),
@@ -13,7 +13,6 @@
 		weekdayFormat = "short",
     weekStartsOn = 1,
     locale= "sv",
-    isDateUnavailable = undefined,
 		class: className,
 		...restProps
 	}: WithoutChildrenOrChild<RangeCalendarPrimitive.RootProps> = $props();
@@ -44,7 +43,6 @@
 	{weekdayFormat}
   {weekStartsOn}
   {numberOfMonths}
-  isDateDisabled={isDateUnavailable}
 	class={cn("p-3", className)}
 	{...restProps}
 >
@@ -73,7 +71,7 @@
 						{#each month.weeks as weekDates (weekDates)}
 							<RangeCalendar.GridRow class="mt-2 w-full">
 								{#each weekDates as date (date)}
-									<RangeCalendar.Cell {date} month={month.value}>
+									<RangeCalendar.Cell {date} month={month.value} class={date.month == month.value.month ? "" : "opacity-0"}>
 										<RangeCalendar.Day class={date.month == month.value.month ? "" : "hidden"}/>
 									</RangeCalendar.Cell>
 								{/each}

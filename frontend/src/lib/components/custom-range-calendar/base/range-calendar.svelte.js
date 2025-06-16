@@ -8,6 +8,7 @@ import { getAnnouncer } from "../internal/date-time/announcer.js";
 import { createFormatter } from "../internal/date-time/formatter.js";
 import { createMonths, getCalendarElementProps, getCalendarHeadingValue, getIsNextButtonDisabled, getIsPrevButtonDisabled, getWeekdays, handleCalendarKeydown, handleCalendarNextPage, handleCalendarPrevPage, shiftCalendarFocus, useEnsureNonDisabledPlaceholder, useMonthViewOptionsSync, useMonthViewPlaceholderSync, } from "../internal/date-time/calendar-helpers.svelte.js";
 import { areAllDaysBetweenValid, getDateValueType, isAfter, isBefore, isBetweenInclusive, toDate, } from "../internal/date-time/utils.js";
+
 export class RangeCalendarRootState {
     opts;
     months = $state([]);
@@ -245,23 +246,29 @@ export class RangeCalendarRootState {
     });
     fullCalendarLabel = $derived.by(() => `${this.opts.calendarLabel.current} ${this.headingValue}`);
     isSelectionStart(date) {
-        if (!this.opts.startValue.current)
-            return false;
-        return isSameDay(date, this.opts.startValue.current);
+        const ranges = this.opts.ranges.current;
+        for (let i = 0; i < ranges.length; i++) {
+            if (isSameDay(date, ranges[i].start)) {
+                return true;
+            }
+        }
+        return false;
     }
     isSelectionEnd(date) {
-        if (!this.opts.endValue.current)
-            return false;
-        return isSameDay(date, this.opts.endValue.current);
+        const ranges = this.opts.ranges.current;
+        for (let i = 0; i < ranges.length; i++) {
+            if (isSameDay(date, ranges[i].end)) {
+                return true;
+            }
+        }
+        return false;
     }
     isSelected(date) {
-        // HEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEERE
-        if (this.opts.startValue.current && isSameDay(this.opts.startValue.current, date))
-            return true;
-        if (this.opts.endValue.current && isSameDay(this.opts.endValue.current, date))
-            return true;
-        if (this.opts.startValue.current && this.opts.endValue.current) {
-            return isBetweenInclusive(date, this.opts.startValue.current, this.opts.endValue.current);
+        const ranges = this.opts.ranges.current;
+        for (let i = 0; i < ranges.length; i++) {
+            if (isBetweenInclusive(date, ranges[i].start, ranges[i].end)) {
+                return true;
+            }
         }
         return false;
     }

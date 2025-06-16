@@ -34,6 +34,7 @@
 		disableDaysOutsideMonth = true,
 		onStartValueChange = noop,
 		onEndValueChange = noop,
+    ranges = [],
 		...restProps
 	}: RangeCalendarRootProps = $props();
 
@@ -80,6 +81,10 @@
 			() => ref,
 			(v) => (ref = v)
 		),
+    ranges: box.with(
+      () => ranges,
+      (v) => (ranges = v)
+    ),
 		value: box.with(
 			() => value!,
 			(v) => {

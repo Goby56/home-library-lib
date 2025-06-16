@@ -5,9 +5,11 @@ import type { BitsFocusEvent, BitsKeyboardEvent, BitsMouseEvent, WithRefProps } 
 import { type Announcer } from "../internal/date-time/announcer.js";
 import { type Formatter } from "../internal/date-time/formatter.js";
 import { type CalendarParts } from "../internal/date-time/calendar-helpers.svelte.js";
+import type { HighlightedRange } from "./types.js";
 type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 type RangeCalendarRootStateProps = WithRefProps<WritableBoxedValues<{
+    ranges: HighlightedRange[];
     value: DateRange;
     placeholder: DateValue;
     startValue: DateValue | undefined;
