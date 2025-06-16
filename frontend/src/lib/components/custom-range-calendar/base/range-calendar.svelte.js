@@ -324,12 +324,35 @@ export class RangeCalendarRootState {
     handleCellClick(e, date) {
         if (this.isDateDisabled(date) || this.isDateUnavailable(date))
             return;
+
+        const ranges = this.opts.ranges.current ?? [];
+
         if (this.opts.learnMore.current) {
-            const ranges = this.opts.ranges.current ?? [];
             for (let i = 0; i < ranges.length; i++) {
                 if (isBetweenInclusive(date, ranges[i].start, ranges[i].end)) {
                     this.opts.learnMore.current(date, i);
                     return;
+                }
+            }
+        }
+        const otherSelection = this.opts.startValue.current ?? this.opts.endValue.current ?? undefined;
+        if (otherSelection) {
+            for (let i = 0; i < ranges.length; i++) {
+                if (isBefore(otherSelection, ranges[i].start) || isSameDay(otherSelection, ranges[i].start)) {
+                    if (isAfter(date, ranges[i].start)) {
+                        this.#announceSelectedDate(date);
+                        this.#setStartValue(date);
+                        this.#setEndValue(undefined);
+                        return;
+                    }
+                }
+                if (isAfter(otherSelection, ranges[i].end) || isSameDay(otherSelection, ranges[i].end)) {
+                    if (isBefore(date, ranges[i].end)) {
+                        this.#announceSelectedDate(date);
+                        this.#setStartValue(date);
+                        this.#setEndValue(undefined);
+                        return;
+                    }
                 }
             }
         }
@@ -352,9 +375,8 @@ export class RangeCalendarRootState {
                 }
             }
         }
-        if (this.opts.startValue.current &&
-            this.opts.endValue.current &&
-            isSameDay(this.opts.endValue.current, date) &&
+        if (this.opts.startValue.current && this.opts.endValue.current &&
+            (isSameDay(this.opts.startValue.current, date) || isSameDay(this.opts.endValue.current, date)) &&
             !this.opts.preventDeselect.current) {
             this.#setStartValue(undefined);
             this.#setEndValue(undefined);
