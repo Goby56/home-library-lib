@@ -8,6 +8,7 @@ export type RangeCalendarRootSnippetProps = {
 export type HighlightedRange = {
     start: DateValue,
     end: DateValue,
+    color: string
 }
 
 export type RangeCalendarRootPropsWithoutHTML = WithChild<{

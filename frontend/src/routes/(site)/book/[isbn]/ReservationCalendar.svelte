@@ -19,11 +19,12 @@
   let ranges: HighlightedRange[] = $derived(reservations.map(rsv => ({
       start: parseAbsoluteToLocal(rsv.start_date),
       end: parseAbsoluteToLocal(rsv.end_date),
+      color: rsv.user.personal_color,
     })
   ));
 
   function onClickHightlight(date: DateValue, highlight: number) {
-    console.log(highlight);
+    console.log(reservations[highlight].user.username);
   }
 
 </script>

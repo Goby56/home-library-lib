@@ -302,7 +302,7 @@ pub async fn get_books(pool: &SqlitePool, _search_str: Option<&str>,
 
 pub async fn get_user(pool: &SqlitePool, id: u32) -> Result<types::User, sqlx::Error> {
     let user: types::User = sqlx::query_as("
-        SELECT id, name, personal_color
+        SELECT id, username, personal_color
         FROM User
         WHERE id = ?").bind(id).fetch_one(pool).await?;
     Ok(user)

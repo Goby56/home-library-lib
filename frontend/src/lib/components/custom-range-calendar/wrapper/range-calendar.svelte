@@ -4,7 +4,8 @@
 	import * as RangeCalendar from "./index.js";
 	import { cn } from "$lib/utils.js";
   import { MediaQuery } from "svelte/reactivity";
-  import type { DateValue, DateTimeDuration } from "@internationalized/date";
+  import { type DateValue, type DateTimeDuration, isSameDay } from "@internationalized/date";
+    import { isBetweenInclusive } from "../internal/date-time/utils";
 
 	let {
 		ref = $bindable(null),
@@ -47,6 +48,26 @@
     return "";
   }
 
+  function asRgb(hex: string) {
+    return {
+      r: parseInt(hex.slice(0,2), 16),
+      g: parseInt(hex.slice(2, 4), 16),
+      b: parseInt(hex.slice(3, 6), 16),
+    }
+  }
+
+  function getPersonalHighlightColor(date: DateValue) {
+    for (let i = 0; i < ranges.length; i++) {
+        if (isBetweenInclusive(date, ranges[i].start, ranges[i].end)) {
+            const isEdge = isSameDay(date, ranges[i].start) || isSameDay(date, ranges[i].end);
+            return Promise.resolve({
+              ...asRgb(ranges[i].color), isEdge
+            });
+        }
+    }
+    return Promise.reject();
+  }
+
 </script>
 
 <RangeCalendarPrimitive.Root
@@ -87,12 +108,21 @@
 						{#each month.weeks as weekDates (weekDates)}
 							<RangeCalendar.GridRow class="mt-2 w-full">
 								{#each weekDates as date (date)}
-									<!--
-									<RangeCalendar.Cell {date} month={month.value} class="!bg-red-200 {borderRounding(date)}">
-                  -->
-									<RangeCalendar.Cell {date} month={month.value} class={borderRounding(date)}>
-										<RangeCalendar.Day/>
-									</RangeCalendar.Cell>
+                  {#await getPersonalHighlightColor(date) then color}
+									  <RangeCalendar.Cell {date} month={month.value} class={borderRounding(date)}
+                      style="background-color: rgba({color.r},{color.g},{color.b},0.5) !important;">
+                      {#if color.isEdge}
+									  	  <RangeCalendar.Day
+                          style="background-color: rgba({color.r},{color.g},{color.b},0.8) !important;"/>
+                      {:else} 
+									  	  <RangeCalendar.Day/>
+                      {/if}
+									  </RangeCalendar.Cell>
+                  {:catch} 
+									  <RangeCalendar.Cell {date} month={month.value} class={borderRounding(date)}>
+									  	<RangeCalendar.Day/>
+									  </RangeCalendar.Cell>
+                  {/await}
 								{/each}
 							</RangeCalendar.GridRow>
 						{/each}
