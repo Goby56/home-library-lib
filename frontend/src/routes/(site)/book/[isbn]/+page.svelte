@@ -103,7 +103,7 @@
 
 </script>
 
-<div class="flex flex-col pb-3">
+<div class="flex flex-col pb-3 md:mb-0 mb-20">
   <div class="grid md:grid-cols-2 grid-cols-1 gap-3">
     <div class="flex justify-center">
       <img src="{coverImage}" alt="book cover"
@@ -174,19 +174,17 @@
   {/if}
 {/snippet}
 
-{#if isDesktop.current}
-  <div class="flex flex-col justify-start items-center mb-20">
-    <ReservationCalendar bind:value={reservationDates} numberOfMonths={4} {reservations}/>
-    <div class="flex justify-center items-center gap-3">
-      <div class="flex gap-2 items-center">
-        <p class="text-center text-muted-foreground text-sm">Välj en bokhylla:</p>
-        <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
-      </div>
-      <ArrowRightIcon class="size-5 text-muted-foreground"/>
-      {@render reservationButton()}
+<div class="md:flex flex-col justify-start items-center mb-20 hidden">
+  <ReservationCalendar bind:value={reservationDates} numberOfMonths={4} {reservations}/>
+  <div class="flex justify-center items-center gap-3">
+    <div class="flex gap-2 items-center">
+      <p class="text-center text-muted-foreground text-sm">Välj en bokhylla:</p>
+      <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
     </div>
+    <ArrowRightIcon class="size-5 text-muted-foreground"/>
+    {@render reservationButton()}
   </div>
-{/if}
+</div>
 
 <Drawer.Root>
   {#if data.copies.length != 0}

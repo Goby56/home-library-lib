@@ -2,6 +2,10 @@
   import Button from "$lib/components/ui/button/button.svelte";
 
   let { selectedCopy = $bindable(), physicalCopies } = $props();
+
+  if (physicalCopies.length > 0) {
+    selectedCopy = physicalCopies[0];
+  }
   
 </script>
 
