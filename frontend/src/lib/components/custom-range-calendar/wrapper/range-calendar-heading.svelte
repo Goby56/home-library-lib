@@ -11,6 +11,9 @@
 
 <RangeCalendarPrimitive.Heading
 	bind:ref
-	class={cn("text-sm font-medium", className)}
+	class={cn(
+    "text-sm font-medium", 
+    "md:w-56 flex justify-center",
+    className)}
 	{...restProps}
 />

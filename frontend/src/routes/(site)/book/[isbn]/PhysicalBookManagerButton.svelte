@@ -104,65 +104,43 @@
 
 </script>
 
+{#snippet editDeleteButtons()}
+  <div class="flex justify-center gap-3">
+    <ShelfSelector bind:value={selectedShelf} action={moveCopy} shelves={shelves}>
+      {#snippet actionTrigger(performAction)}
+        {#if selectedShelf != "" && selectedShelf != physicalCopy.shelf.name}
+          <Button onclick={performAction} class="rounded-l-none">
+            Flytta
+          </Button>
+        {:else}
+          <Button disabled variant="outline" class="rounded-l-none">
+          Byt
+          </Button>
+        {/if}
+      {/snippet}
+      {#snippet noShelfSelected()}
+        Flytta
+      {/snippet}
+    </ShelfSelector>
+      {#if pendingRemoval}
+        <Button disabled variant="destructive">
+          Tar bort bok
+          <LoaderCircleIcon class="animate-spin"/>
+        </Button>
+      {:else} 
+        <Button variant="destructive" onclick={removeCopy}>Ta bort</Button>
+      {/if}
+  </div>
+{/snippet}
+
 {#if isDesktop.current}
   <Popover.Root>
   <Popover.Trigger>
     <Button variant="secondary">{physicalCopy.shelf.name}</Button>
   </Popover.Trigger>
   <Popover.Content>
-    <Tabs.Root value="reserve" class="flex flex-col items-center">
-      <Tabs.List>
-        <Tabs.Trigger value="reserve">Reservera</Tabs.Trigger>
-        <Tabs.Trigger value="edit">Redigera</Tabs.Trigger>
-      </Tabs.List>
-      <Tabs.Content value="reserve">
-        <RangeCalendar {isDateUnavailable} bind:value={reservationDates} class="" />
-        <div class="flex flex-col gap-2 items-center">
-        {#if pendingReservation}
-          <Button disabled>
-            Reservera
-            <LoaderCircleIcon class="animate-spin"/>
-          </Button>
-        {:else}  
-          {#if reservationDuration}
-            <Button onclick={reserveCopy}>Reservera</Button>
-            <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{book.title}</b> på hyllan {physicalCopy.shelf.name} i <u>{reservationDuration} dagar</u></p>
-          {:else}   
-            <Button disabled>Reservera</Button>
-            <p class="text-center text-muted-foreground text-sm px-2">Ange två datum som du vill reservera boken mellan</p>
-          {/if}
-        {/if}
-        </div>
-      </Tabs.Content>
-      <Tabs.Content class="w-full" value="edit">
-        <div class="flex justify-center gap-3">
-          <ShelfSelector bind:value={selectedShelf} action={moveCopy} shelves={shelves}>
-            {#snippet actionTrigger(performAction)}
-              {#if selectedShelf != "" && selectedShelf != physicalCopy.shelf.name}
-                <Button onclick={performAction} class="rounded-l-none">
-                  Byt
-                </Button>
-              {:else}
-                <Button disabled variant="outline" class="rounded-l-none">
-                Byt
-                </Button>
-              {/if}
-            {/snippet}
-            {#snippet noShelfSelected()}
-              Byt bokhylla
-            {/snippet}
-          </ShelfSelector>
-          {#if pendingRemoval}
-            <Button disabled variant="destructive">
-              Tar bort bok
-              <LoaderCircleIcon class="animate-spin"/>
-            </Button>
-          {:else} 
-            <Button variant="destructive" onclick={removeCopy}>Ta bort bok</Button>
-          {/if}
-        </div>
-      </Tabs.Content>
-    </Tabs.Root>
+    <p class="text-muted-foreground text-sm text-center pb-3">Vad vill du göra med <b>{book.title}</b> på hylla {physicalCopy.shelf.name}?</p>
+    {@render editDeleteButtons()}
   </Popover.Content>
   </Popover.Root>
 {:else}
@@ -174,32 +152,7 @@
       <Drawer.Header>
         <Drawer.Description>Vad vill du göra med <b>{book.title}</b> på hylla {physicalCopy.shelf.name}?</Drawer.Description>
       </Drawer.Header>
-        <div class="flex justify-center gap-3">
-        <ShelfSelector bind:value={selectedShelf} action={moveCopy} shelves={shelves}>
-          {#snippet actionTrigger(performAction)}
-            {#if selectedShelf != "" && selectedShelf != physicalCopy.shelf.name}
-              <Button onclick={performAction} class="rounded-l-none">
-                Byt
-              </Button>
-            {:else}
-              <Button disabled variant="outline" class="rounded-l-none">
-              Byt
-              </Button>
-            {/if}
-          {/snippet}
-          {#snippet noShelfSelected()}
-            Flytta
-          {/snippet}
-        </ShelfSelector>
-          {#if pendingRemoval}
-            <Button disabled variant="destructive">
-              Tar bort bok
-              <LoaderCircleIcon class="animate-spin"/>
-            </Button>
-          {:else} 
-            <Button variant="destructive" onclick={removeCopy}>Ta bort bok</Button>
-          {/if}
-        </div>
+      {@render editDeleteButtons()}
       <Drawer.Footer>
         <Drawer.Close class={buttonVariants({ variant: "outline" })}>
           Tillbaka

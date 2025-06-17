@@ -11,7 +11,7 @@ use time::{OffsetDateTime, UtcDateTime};
 
 use rand::{self, Rng};
 
-use crate::types;
+use crate::types::{self, PhysicalBook};
 
 pub async fn get_physical_copies(pool: &SqlitePool, isbn: &str) -> Result<(Option<types::Book>, Vec<types::PhysicalBook>), sqlx::Error>  {
     let book = get_books(pool, None, Some(isbn), Some(1), true).await?.pop(); 
@@ -71,9 +71,16 @@ pub async fn move_physical_book(pool: &SqlitePool, id: u32, new_shelf: &str) -> 
 }
 
 pub async fn remove_physical_book(pool: &SqlitePool, id: u32) -> Result<(), sqlx::Error> {
-    sqlx::query("
-        DELETE FROM PhysicalBook
-        WHERE id = ?").bind(id).execute(pool).await?;
+    let physical_book = get_physical_book(pool, id).await?;
+    if let Some(physical_book) = physical_book {
+        sqlx::query("
+            DELETE FROM PhysicalBook
+            WHERE id = ?").bind(id).execute(pool).await?;
+        for reservation in physical_book.reservations {
+            // Separate deletions, may be slow, but this is on a small scale
+            remove_reservation(pool, reservation.id).await?;
+        }
+    }
     Ok(())
 }
 

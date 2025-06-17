@@ -4,17 +4,14 @@
   import type { DateRange } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
   import type { HighlightedRange } from "$lib/components/custom-range-calendar/base/types";
+    import { isAfter, isBefore, isBetweenInclusive } from "$lib/components/custom-range-calendar/internal/date-time/utils";
 
-  let { reservations }: { reservations: any[] } = $props();
+  let { reservations, numberOfMonths, value = $bindable({start: undefined, end: undefined}) }: 
+    { reservations: any[], numberOfMonths: number, value: DateRange } = $props();
 
-  let value = $state<DateRange>({
-    start: undefined,
-    end: undefined,
-  });
+  // const isDesktop = new MediaQuery("(min-width: 768px)");
 
-  const isDesktop = new MediaQuery("(min-width: 768px)");
-
-  let numberOfMonths = $derived(isDesktop.current ? 5 : 2);
+  // let numberOfMonths = $derived(isDesktop.current ? 5 : 2);
 
   let ranges: HighlightedRange[] = $derived(reservations.map(rsv => ({
       start: parseAbsoluteToLocal(rsv.start_date),
@@ -22,6 +19,20 @@
       color: rsv.user.personal_color,
     })
   ));
+  
+  $effect(() => {
+    // Reset selection if ranges overlap
+    ranges.forEach(rsv => {
+      if (value.start && value.end) {
+        if (value.start < rsv.end && rsv.end < value.end) {
+          value = {start:undefined, end: undefined};
+        }
+      }
+      if (value.start && isBetweenInclusive(value.start, rsv.start, rsv.end)) {
+        value = {start:undefined, end: undefined};
+      }
+    })
+  })
 
   function onClickHightlight(date: DateValue, highlight: number) {
     console.log(reservations[highlight].user.username);

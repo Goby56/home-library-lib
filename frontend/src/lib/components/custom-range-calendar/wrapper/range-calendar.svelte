@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type WithoutChildrenOrChild } from "bits-ui";
+	import { type Month, type WithoutChildrenOrChild } from "bits-ui";
 	import { RangeCalendar as RangeCalendarPrimitive } from "../base";
 	import * as RangeCalendar from "./index.js";
 	import { cn } from "$lib/utils.js";
@@ -56,7 +56,10 @@
     }
   }
 
-  function getPersonalHighlightColor(date: DateValue) {
+  function getPersonalHighlightColor(date: DateValue, month: Month<DateValue>) {
+    if (month.value.month != date.month || month.value.month != date.month) {
+      return Promise.reject();
+    }
     for (let i = 0; i < ranges.length; i++) {
         if (isBetweenInclusive(date, ranges[i].start, ranges[i].end)) {
             const isEdge = isSameDay(date, ranges[i].start) || isSameDay(date, ranges[i].end);
@@ -93,12 +96,14 @@
 			{#each months as month, i (month)}
 				<RangeCalendar.Grid>
 					<RangeCalendar.GridHead>
-            <div class="flex justify-center items-center">
-              {MONTHS[month.value.month-1]}
-            </div>
+            {#if months.length > 1} 
+              <div class="flex justify-center items-center">
+                {MONTHS[month.value.month-1]}
+              </div>
+            {/if}
 						<RangeCalendar.GridRow class="flex">
 							{#each weekdays as weekday (weekday)}
-								<RangeCalendar.HeadCell class={(isDesktop.current || (!isDesktop && i == 0)) ? "" : "hidden"}>
+								<RangeCalendar.HeadCell class={(isDesktop.current || (!isDesktop.current && i == 0)) ? "" : "hidden"}>
 									{weekday.slice(0, 2)}
 								</RangeCalendar.HeadCell>
 							{/each}
@@ -108,7 +113,7 @@
 						{#each month.weeks as weekDates (weekDates)}
 							<RangeCalendar.GridRow class="mt-2 w-full">
 								{#each weekDates as date (date)}
-                  {#await getPersonalHighlightColor(date) then color}
+                  {#await getPersonalHighlightColor(date, month) then color}
 									  <RangeCalendar.Cell {date} month={month.value} class={borderRounding(date)}
                       style="background-color: rgba({color.r},{color.g},{color.b},0.5) !important;">
                       {#if color.isEdge}
