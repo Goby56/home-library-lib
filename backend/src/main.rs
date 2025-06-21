@@ -87,6 +87,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::get_shelves)
             .service(routes::register_user)
             .service(routes::login_user)
+            .service(routes::logout_user)
             .service(routes::get_user)
             .service(routes::get_user_reservations)
             .service(routes::reserve_physical_book)

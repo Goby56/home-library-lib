@@ -5,8 +5,9 @@
   import EditIcon from "@lucide/svelte/icons/pencil";
   import CheckIcon from "@lucide/svelte/icons/check";
   import Button from '$lib/components/ui/button/button.svelte';
-    import { MediaQuery } from 'svelte/reactivity';
-    import Input from '$lib/components/ui/input/input.svelte';
+  import { MediaQuery } from 'svelte/reactivity';
+  import Input from '$lib/components/ui/input/input.svelte';
+  import DarkModeToggle from '$lib/components/DarkModeToggle.svelte';
  
 	let { data }: PageProps = $props();
   
@@ -14,6 +15,8 @@
   let selectedHex = $state(initialColor);
 
   let hasChangedColor = $derived(selectedHex != initialColor);
+
+  let usernameInput = $state(data.user.username);
 
   const isDesktop = new MediaQuery("(min-width: 768px)");
 
@@ -32,7 +35,9 @@
       {data.user.username}
     </h1>
     <p class="text-muted-foreground text-sm hidden md:flex">Här kan du ändra din personliga färg och inloggningsuppgifter</p>
-    <Button variant="secondary">Logga ut</Button>
+    <form method="POST" action="/api/logout">
+      <Button type="submit" class="text-foreground" variant="secondary">Logga ut</Button>
+    </form>
   </div>
 </div>
 <h2 class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors mt-5 mb-2">
@@ -48,6 +53,10 @@
 </h2>
 <div class="flex flex-col gap-3 items-start">
   <div class="flex gap-2 items-center">
+    <p class="text-muted-foreground">Använd mörkt läge: </p>
+    <DarkModeToggle/>
+  </div>
+  <div class="flex gap-2 items-center">
     <p class="text-muted-foreground">Personlig färg: </p>
     <div class="flex justify-center items-center w-20 text-muted-foreground border size-fit p-1 px-2 rounded-sm relative">
       {selectedHex}
@@ -57,13 +66,18 @@
       <Button variant="secondary" class="h-full">Byt färg</Button> 
     {/if}
   </div>
-  <div class="flex gap-2 items-center">
+  <div class="flex flex-wrap md:flex-nowrap gap-2 items-center">
     <p class="text-muted-foreground">Användarnamn: </p>
-    <Input type="search" value={data.user.username} class="w-full rounded-md"/>
+    <Input type="search" bind:value={usernameInput} class="w-full rounded-md"/>
+    {#if usernameInput != data.user.username}
+      <Button variant="default">Byt användarnamn</Button>
+    {:else} 
+      <!-- TODO: Give feedback of available names as the user types -->
+      <Button disabled variant="default">Byt användarnamn</Button>
+    {/if}
   </div>
-  <div class="flex gap-2 items-center">
-    <p class="text-muted-foreground">Lösenord: </p>
-    <Input type="search" placeholder="Nytt lösenord" class="w-full rounded-md"/>
+  <div class="flex gap-3">
+    <Button href="/change-password" variant="secondary">Byt lösenord</Button>
+    <Button variant="destructive">Ta bort profil</Button>
   </div>
-  <Button variant="destructive">Ta bort konto</Button>
 </div>

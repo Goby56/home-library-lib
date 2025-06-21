@@ -224,6 +224,19 @@ pub async fn get_user(state: Data<AppState>, req: HttpRequest) -> Result<impl Re
     }
 }
 
+#[post("/logout_user")]
+pub async fn logout_user(state: Data<AppState>, req: HttpRequest) -> Result<impl Responder> {
+    let extensions = req.extensions();
+    let Some(session) = extensions.get::<Session>() else {
+        return Err(actix_web::error::ErrorUnauthorized("Could not verify session token"));
+    };
+    match auth::invalidate_session(&state.db, session).await {
+        Ok(()) => Ok("Logged user out"),
+        Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+    }
+}
+
+
 #[post("/login_user")]
 pub async fn login_user(state: Data<AppState>, login_data: web::Json<UserCredentials>) -> Result<impl Responder> {
     let user_id = match database::login_user(&state.db, &login_data.username, &login_data.password).await {

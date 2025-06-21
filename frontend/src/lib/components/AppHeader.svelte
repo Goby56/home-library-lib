@@ -1,15 +1,17 @@
 <script>
   import UserIcon from "@lucide/svelte/icons/user";
-  import QuickActionMenu from "./QuickActionMenu.svelte";
   import CheckIcon from "@lucide/svelte/icons/check";
   import HouseIcon from "@lucide/svelte/icons/house";
   import Searchbar from "./Searchbar.svelte";
   import Button from "./ui/button/button.svelte";
-  import SidebarToggleButton from "./SidebarToggleButton.svelte";
   import { Separator } from "$lib/components/ui/separator/index.js";
   import AppLogo from "$lib/assets/rose_icon.svelte";
+  import DarkModeToggle from "$lib/components/DarkModeToggle.svelte";
+  import { MediaQuery } from "svelte/reactivity";
+  import { mode } from "mode-watcher";
 
   let { user } = $props();
+  const isDesktop = new MediaQuery("(min-width: 768px)");
 </script>
 
 <header class="z-50 flex w-full fixed h-16 items-center gap-2 bg-background p-1 px-2">
@@ -26,17 +28,24 @@
     <div class="flex justify-center w-full md:w-1/2">
       <Searchbar/>
     </div>
-    <div class="flex justify-end items-center gap-2 md:pr-2">
+    <div class="flex justify-end items-center h-8 gap-2 md:pr-2">
+      {#if isDesktop.current}
+        <DarkModeToggle/>
+      {/if}
+      <Separator class="hidden md:contents" orientation="vertical" />
       <a href="/profile" class="flex justify-center items-center rounded-md gap-2 p-1 size-fit hover:bg-secondary">
         <div class="flex justify-center items-center rounded-md size-10" style="background-color: #{user.personal_color}">
-          <UserIcon/>
+          <UserIcon class={mode.current == "light" ? "text-background" : "text-foreground"}/>
         </div>
         <div class="hidden md:flex flex-col items-start">
           <span>{user.username} </span> 
           <span class="flex items-center text-muted-foreground text-xs">Inloggad <CheckIcon size="12"/></span> 
         </div>
       </a>
-      <Button class="hidden md:flex text-foreground" variant="link">Logga ut</Button>
+      <Separator class="hidden md:contents" orientation="vertical" />
+      <form method="POST" action="/api/logout">
+        <Button type="submit" class="hidden md:flex text-foreground p-1" variant="link">Logga ut</Button>
+      </form>
     </div>
   </div>
 </header>

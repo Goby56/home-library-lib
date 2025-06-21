@@ -87,6 +87,13 @@ pub async fn validate_session(pool: &SqlitePool, token: Token) -> Result<Option<
     Ok(None)
 }
 
+pub async fn invalidate_session(pool: &SqlitePool, session: &Session) -> Result<(), sqlx::Error> {
+    sqlx::query("
+        DELETE FROM Session
+        WHERE id = ?").bind(session.id.clone()).execute(pool).await?;
+    Ok(())
+}
+
 async fn get_session(pool: &SqlitePool, session_id: String) -> Result<Option<Session>, sqlx::Error> {
     let now = OffsetDateTime::now_utc().unix_timestamp(); 
     
