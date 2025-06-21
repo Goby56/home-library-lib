@@ -1,13 +1,16 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-  import { invalidateAll } from '$app/navigation';
-  import axios from "axios";
+  import { goto, invalidate, invalidateAll } from '$app/navigation';
   import EditIcon from "@lucide/svelte/icons/pencil";
-  import CheckIcon from "@lucide/svelte/icons/check";
-  import Button from '$lib/components/ui/button/button.svelte';
+  import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
+  import RemoveIcon from "@lucide/svelte/icons/x";
+  import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import Input from '$lib/components/ui/input/input.svelte';
   import DarkModeToggle from '$lib/components/DarkModeToggle.svelte';
+  import { parseAbsoluteToLocal } from '@internationalized/date';
+  import * as Drawer from "$lib/components/ui/drawer/index.js";
+  import { reservationDuration } from "$lib/utils";
  
 	let { data }: PageProps = $props();
   
@@ -19,6 +22,29 @@
   let usernameInput = $state(data.user.username);
 
   const isDesktop = new MediaQuery("(min-width: 768px)");
+
+  let drawerOpen = $state(false);
+
+  let currentReservation: any = $state(undefined);
+  function handleReservationClick(reservation: any) {
+    if (isDesktop.current) {
+      goto(`/book/${reservation.isbn}?copy=${reservation.copy_id}`)
+    } else {
+      drawerOpen = true; 
+      currentReservation = reservation;
+    }
+  }
+
+  let pendingReservationRemoval = $state(false);
+
+  async function removeReservation(event: any, reservation: any) {
+    event.stopPropagation();
+    pendingReservationRemoval = true;
+    let response = await fetch("/api/remove-reservation?id=" + reservation.reservation.id, { method: "POST" });
+    invalidateAll();
+    console.log(await response.text());
+    pendingReservationRemoval = false;
+  }
 
 </script>
 
@@ -34,18 +60,36 @@
     <h1 class="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
       {data.user.username}
     </h1>
-    <p class="text-muted-foreground text-sm hidden md:flex">Här kan du ändra din personliga färg och inloggningsuppgifter</p>
+    <p class="text-muted-foreground text-sm hidden md:flex">Här kan du ändra dina inloggningsuppgifter och din personliga färg</p>
     <form method="POST" action="/api/logout">
       <Button type="submit" class="text-foreground" variant="secondary">Logga ut</Button>
     </form>
   </div>
 </div>
-<h2 class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors mt-5 mb-2">
+<h2 class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors mt-5 mb-4">
   Reservationer
 </h2>
-<div class="flex">
-  {#each data.user_reservations as reservation}
-    {reservation.start_date} 
+<div class="flex flex-wrap gap-3">
+  {#each data.user_reservations as rsv}
+    <button onclick={() => handleReservationClick(rsv)} class="flex flex-col items-start relative hover:bg-muted bg-muted/50 p-1 px-2 rounded-md group">
+      <p class="font-semibold">{rsv.title}</p>
+      <p class="text-muted-foreground">Hylla: {rsv.shelf.name}</p>
+      <p>{reservationDuration(rsv.reservation)}</p>
+      <Button
+        onclick={(e) => removeReservation(e, rsv)}
+        variant="destructive"
+        class="hidden md:group-hover:flex size-6 rounded-full absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2"
+        size="icon"
+        >
+        {#if pendingReservationRemoval}
+          <LoaderCircleIcon/>
+        {:else}
+          <RemoveIcon/>
+        {/if}
+      </Button>
+    </button>
+  {:else}
+    <p class="text-muted-foreground">Du har inga reservationer</p>
   {/each} 
 </div>
 <h2 class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors mt-5 mb-2">
@@ -53,7 +97,7 @@
 </h2>
 <div class="flex flex-col gap-3 items-start">
   <div class="flex gap-2 items-center">
-    <p class="text-muted-foreground">Använd mörkt läge: </p>
+    <p class="text-muted-foreground">Mörkt läge: </p>
     <DarkModeToggle/>
   </div>
   <div class="flex gap-2 items-center">
@@ -81,3 +125,30 @@
     <Button variant="destructive">Ta bort profil</Button>
   </div>
 </div>
+
+{#if !isDesktop.current && currentReservation != undefined}
+  <Drawer.Root bind:open={drawerOpen}>
+    <Drawer.Content>
+      <Drawer.Header>
+        <Drawer.Title>{currentReservation.title}</Drawer.Title>
+        <Drawer.Description>
+          <p>{reservationDuration(currentReservation.reservation)}</p>
+        </Drawer.Description>
+      </Drawer.Header>
+      <Drawer.Footer class="pt-0 gap-5">
+        <div class="flex justify-center gap-3">
+          <Button href="/book/{currentReservation.isbn}?copy={currentReservation.copy_id}" variant="secondary">
+            Gå till boken (hylla {currentReservation.shelf.name})
+          </Button>
+          <Button onclick={(e) => removeReservation(e, currentReservation)} variant="destructive">
+            Ta bort reservation
+            {#if pendingReservationRemoval}
+              <LoaderCircleIcon/>
+            {/if}
+          </Button>
+        </div>
+        <Drawer.Close class={buttonVariants({ variant: "outline" })}>Tillbaka</Drawer.Close>
+      </Drawer.Footer>
+    </Drawer.Content>
+  </Drawer.Root>
+{/if}

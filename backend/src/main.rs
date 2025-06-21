@@ -91,7 +91,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::get_user)
             .service(routes::get_user_reservations)
             .service(routes::reserve_physical_book)
-            .service(routes::edit_reservation)
+            .service(routes::remove_reservation)
             .service(actix_files::Files::new("/book_cover", "./backend/db/images/book_covers/"))
     })
     .bind(("0.0.0.0", 8080))?

@@ -1,24 +1,42 @@
 
-// use serde::Serialize;
 use time::OffsetDateTime;
 
-// pub trait Item {
-//     fn item_type() -> ItemType;
-// 
-//     fn data<T: Serialize>() -> T;
-//     
-//     fn status() -> ReservationStatus;
-// }
+pub trait Location {
 
-// pub enum ItemType {
-//     Book
-// }
+}
+
+pub trait Item {
+    fn item_type() -> ItemType;
+
+    fn repr() -> String;
+
+    fn location() -> impl Location;
+
+    fn data<T: serde::Serialize>() -> T;
+}
+
+pub enum ItemType {
+    Book(Book, PhysicalBook)
+}
+
+pub struct GenericItem {
+    item_type: ItemType,
+    name: String,
+    location: String,
+    reservation: Reservation,
+}
 
 #[derive(sqlx::FromRow, serde::Serialize, Clone)]
 pub struct User {
     pub id: u32,
     pub username: String,
     pub personal_color: String,
+}
+
+#[derive(sqlx::FromRow)]
+pub struct BookReservationMatch {
+    pub physical_book: u32,
+    pub reservation: u32
 }
 
 #[derive(serde::Serialize)]

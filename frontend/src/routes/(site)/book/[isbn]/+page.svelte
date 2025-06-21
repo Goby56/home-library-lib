@@ -175,7 +175,7 @@
 {/snippet}
 
 <div class="md:flex flex-col justify-start items-center mb-20 hidden">
-  <ReservationCalendar bind:value={reservationDates} numberOfMonths={4} {reservations}/>
+  <ReservationCalendar bind:value={reservationDates} user={data.user} numberOfMonths={4} {reservations}/>
   <div class="flex justify-center items-center gap-3">
     <div class="flex gap-2 items-center">
       <p class="text-center text-muted-foreground text-sm">Välj en bokhylla:</p>
@@ -201,7 +201,7 @@
       <Drawer.Title>Reservera bok</Drawer.Title>
     </Drawer.Header>
     <div class="flex flex-col justify-start items-center h-full">
-      <ReservationCalendar bind:value={reservationDates} numberOfMonths={1} {reservations}/>
+      <ReservationCalendar bind:value={reservationDates} user={data.user} numberOfMonths={1} {reservations}/>
       <div class="flex flex-col gap-2 items-center">
         
         <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>

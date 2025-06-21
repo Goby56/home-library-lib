@@ -4,11 +4,13 @@
   import type { DateRange } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
   import type { HighlightedRange } from "$lib/components/custom-range-calendar/base/types";
-    import { isAfter, isBefore, isBetweenInclusive } from "$lib/components/custom-range-calendar/internal/date-time/utils";
-    import { boolean } from "zod";
+  import { isAfter, isBefore, isBetweenInclusive } from "$lib/components/custom-range-calendar/internal/date-time/utils";
+  import * as Dialog from "$lib/components/ui/dialog/index.js";
+    import { reservationDuration } from "$lib/utils";
+    import Button from "./ui/button/button.svelte";
 
-  let { reservations, numberOfMonths, value = $bindable({start: undefined, end: undefined}), disabled = false }: 
-    { reservations: any[], numberOfMonths: number, value: DateRange, disabled?: boolean } = $props();
+  let { user, reservations, numberOfMonths, value = $bindable({start: undefined, end: undefined}), disabled = false }: 
+    { user: any, reservations: any[], numberOfMonths: number, value: DateRange, disabled?: boolean } = $props();
 
   // const isDesktop = new MediaQuery("(min-width: 768px)");
 
@@ -30,14 +32,35 @@
         }
       }
       if (value.start && isBetweenInclusive(value.start, rsv.start, rsv.end)) {
-        value = {start:undefined, end: undefined};
+        value = {start: undefined, end: undefined};
       }
     })
   })
 
+  let popupOpen = $state(false);
+
+  let focusedReservation: any = $state(undefined);
+
   function onClickHightlight(date: DateValue, highlight: number) {
-    console.log(reservations[highlight].user.username);
+    focusedReservation = reservations[highlight];
+    popupOpen = true;
   }
 
 </script>
 <RangeCalendar bind:value class="rounded-lg" {ranges} learnMore={onClickHightlight} {disabled} fixedWeeks={false} {numberOfMonths}/>
+
+<Dialog.Root bind:open={popupOpen}>
+  <Dialog.Content>
+    <Dialog.Header>
+      <Dialog.Title> 
+        <p>{reservationDuration(focusedReservation)}</p>
+      </Dialog.Title>
+    </Dialog.Header>
+    {#if focusedReservation.user.username == user.username}
+      <p>Denna reservation är gjord av dig</p>
+      <Button variant="destructive">Ta bort reservation</Button>
+    {:else}
+      <p>Denna reservation är gjord av <u>{focusedReservation.user.username}</u></p>
+    {/if}
+  </Dialog.Content>
+</Dialog.Root>

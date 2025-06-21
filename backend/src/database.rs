@@ -6,6 +6,7 @@ use argon2::{
     Argon2
 };
 
+use serde::Serialize;
 use sqlx::SqlitePool;
 use time::{OffsetDateTime, UtcDateTime};
 
@@ -54,6 +55,46 @@ async fn get_physical_book(pool: &SqlitePool, id: u32) -> Result<Option<types::P
 
     Ok(Some(types::PhysicalBook {
         id, shelf, reservations
+    }))
+}
+
+#[derive(Serialize)]
+pub struct BookReservation {
+    pub isbn: String,
+    pub title: String,
+    pub copy_id: u32,
+    pub shelf: types::Shelf,
+    pub reservation: types::Reservation,
+}
+
+pub async fn get_book_reservation(pool: &SqlitePool, reservation: types::Reservation) -> Result<Option<BookReservation>, sqlx::Error> {
+    let book_info: Option<(String, String, u32, u32)> = sqlx::query_as("
+        SELECT 
+            Book.isbn,
+            Book.title,
+            PhysicalBook.id,
+            PhysicalBook.shelf
+        FROM PhysicalBook
+        LEFT JOIN BookReservationMatch ON PhysicalBook.id = BookReservationMatch.physical_book
+        LEFT JOIN Reservation ON BookReservationMatch.reservation = Reservation.id
+        LEFT JOIN Book ON PhysicalBook.book = Book.id
+        WHERE Reservation.id = ?
+        GROUP BY PhysicalBook.shelf").bind(reservation.id).fetch_optional(pool).await?;
+
+    let Some(book_info) = book_info else {
+        return Ok(None);
+    };
+
+    let Some(shelf) = get_shelf(pool, Some(book_info.3), None).await? else {
+        return Ok(None);
+    };
+
+    Ok(Some(BookReservation {
+        isbn: book_info.0,
+        title: book_info.1,
+        copy_id: book_info.2,
+        shelf,
+        reservation
     }))
 }
 

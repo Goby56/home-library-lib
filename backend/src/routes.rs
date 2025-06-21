@@ -105,7 +105,7 @@ pub async fn reserve_physical_book(state: Data<AppState>, req: HttpRequest, rese
 }
 
 #[post("/remove_reservation/{reservation_id}")]
-pub async fn edit_reservation(state: Data<AppState>, req: HttpRequest, path: web::Path<(u32,)>) -> Result<impl Responder> {
+pub async fn remove_reservation(state: Data<AppState>, req: HttpRequest, path: web::Path<(u32,)>) -> Result<impl Responder> {
     let user_id = match auth::get_user_from_cookie(&state.db, req.cookie(auth::AUTH_COOKIE)).await {
         Ok(Some(user_id)) => user_id,
         Ok(None) => return Err(actix_web::error::ErrorUnauthorized("Could not find user to complete request")),
@@ -114,7 +114,7 @@ pub async fn edit_reservation(state: Data<AppState>, req: HttpRequest, path: web
 
     let reservation = match database::get_reservation(&state.db, path.into_inner().0).await {
         Ok(Some(reservation)) => reservation,
-        Ok(None) => return Err(actix_web::error::ErrorNotFound("Could not find a reservation to edit")),
+        Ok(None) => return Err(actix_web::error::ErrorNotFound("Could not find the reservation to remove")),
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
     
@@ -129,8 +129,8 @@ pub async fn edit_reservation(state: Data<AppState>, req: HttpRequest, path: web
 
 #[derive(Serialize)]
 #[serde(transparent)]
-struct ReservationsResponse {
-    reservations: Vec<types::Reservation>
+struct BookReservationsResponse {
+    reservations: Vec<database::BookReservation>
 }
 
 #[get("/get_user_reservations")]
@@ -140,10 +140,23 @@ pub async fn get_user_reservations(state: Data<AppState>, req: HttpRequest) -> R
         Ok(None) => return Err(actix_web::error::ErrorUnauthorized("Could not find user to complete request")),
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
-    match database::get_user_reservations(&state.db, user_id).await {
-        Ok(reservations) => Ok(web::Json(ReservationsResponse { reservations })),
+
+    let reservations = match database::get_user_reservations(&state.db, user_id).await {
+        Ok(reservations) => reservations,
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+    };
+    
+    let mut book_reservations = vec![];
+    
+    for rsv in reservations {
+        match database::get_book_reservation(&state.db, rsv).await {
+            Ok(Some(reservation)) => book_reservations.push(reservation),
+            Ok(None) => {},
+            Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+        };
     }
+
+    Ok(web::Json(BookReservationsResponse { reservations: book_reservations }))
 }
 
 #[derive(Serialize)]
