@@ -1,12 +1,12 @@
 use std::io::BufReader;
 use image::{self, ImageReader};
 
-use actix_web::{get, post, web::{self, Data}, HttpRequest, Responder, Result};
+use actix_web::{get, post, web::{self, Data}, HttpMessage, HttpRequest, Responder, Result};
 
 use actix_multipart::form::{json::Json as MpJson, tempfile::TempFile, MultipartForm};
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
-use crate::{auth, database, types, AppState};
+use crate::{auth::{self, Session}, database, types, AppState};
 
 #[derive(Debug, MultipartForm)]
 struct ShelveForm {
@@ -129,6 +129,25 @@ pub async fn edit_reservation(state: Data<AppState>, req: HttpRequest, path: web
 
 #[derive(Serialize)]
 #[serde(transparent)]
+struct ReservationsResponse {
+    reservations: Vec<types::Reservation>
+}
+
+#[get("/get_user_reservations")]
+pub async fn get_user_reservations(state: Data<AppState>, req: HttpRequest) -> Result<impl Responder> {
+    let user_id = match auth::get_user_from_cookie(&state.db, req.cookie(auth::AUTH_COOKIE)).await {
+        Ok(Some(user_id)) => user_id,
+        Ok(None) => return Err(actix_web::error::ErrorUnauthorized("Could not find user to complete request")),
+        Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+    };
+    match database::get_user_reservations(&state.db, user_id).await {
+        Ok(reservations) => Ok(web::Json(ReservationsResponse { reservations })),
+        Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+    }
+}
+
+#[derive(Serialize)]
+#[serde(transparent)]
 struct MultipleBooksResponse {
     books: Vec<types::Book>
 }
@@ -193,9 +212,13 @@ struct SessionResponse {
     token: String,
 }
 
-#[get("/get_user/{id}")]
-pub async fn get_user(state: Data<AppState>, path: web::Path<(u32,)>) -> Result<impl Responder> {
-    match database::get_user(&state.db, path.into_inner().0).await {
+#[get("/get_user")]
+pub async fn get_user(state: Data<AppState>, req: HttpRequest) -> Result<impl Responder> {
+    let extensions = req.extensions();
+    let Some(session) = extensions.get::<Session>() else {
+        return Err(actix_web::error::ErrorUnauthorized("Could not verify session token"));
+    };
+    match database::get_user(&state.db, session.user).await {
         Ok(user) => Ok(web::Json(user)),
         Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     }

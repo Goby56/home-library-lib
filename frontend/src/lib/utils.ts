@@ -1,9 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import placeHolderImage from "$lib/assets/placeholder_image.webp";
-import axios from "axios";
-import type { CalendarDate } from "@internationalized/date";
-import type { Cookies } from "@sveltejs/kit";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -26,23 +22,4 @@ export const languageCodes = [
     { label: "Kinesiska", value: "zh" }
 ];
 
-export const BACKEND_URL = "http://192.168.1.223:8080";
 
-export async function backendPOST(cookies: Cookies, endpoint: string, payload: any) {
-    const sessionToken = cookies.get("session-token");
-    return await axios.post(BACKEND_URL + endpoint, payload, {
-        headers: {
-            Cookie: `session-token=${sessionToken}`
-        }
-    })
-}
-
-export function setSessionCookie(cookies: Cookies, session: any) {
-    cookies.set("session-token", session, {
-        path: "/",
-        httpOnly: true,
-        secure: false, // TODO Change to true when switched to HTTPS
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7
-    })
-}

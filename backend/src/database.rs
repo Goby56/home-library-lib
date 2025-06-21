@@ -11,12 +11,11 @@ use time::{OffsetDateTime, UtcDateTime};
 
 use rand::{self, Rng};
 
-use crate::types::{self, PhysicalBook};
+use crate::types;
 
 pub async fn get_physical_copies(pool: &SqlitePool, isbn: &str) -> Result<(Option<types::Book>, Vec<types::PhysicalBook>), sqlx::Error>  {
     let book = get_books(pool, None, Some(isbn), Some(1), true).await?.pop(); 
     // Vec should be length 0 or 1 so pop will give that element
-    
     let mut physical_copies = vec![];
     if let Some(b) = &book {
         for copy_id in &b.copy_ids {
@@ -304,6 +303,21 @@ pub async fn get_books(pool: &SqlitePool, _search_str: Option<&str>,
             }
     }
 
+    }).collect())
+}
+
+pub async fn get_user_reservations(pool: &SqlitePool, user_id: u32) -> Result<Vec<types::Reservation>, sqlx::Error> {
+    let user = get_user(pool, user_id).await?;
+    let reservations: Vec<ReservationIntermediate> = sqlx::query_as("
+        SELECT id, user, created_at, start_date, end_date
+        FROM Reservation
+        WHERE user = ?").bind(user_id).fetch_all(pool).await?;
+    Ok(reservations.iter().map(|rsv| types::Reservation {
+        id: rsv.id,
+        user: user.clone(),
+        created_at: rsv.created_at,
+        start_date: rsv.start_date,
+        end_date: rsv.end_date
     }).collect())
 }
 

@@ -11,10 +11,10 @@ pub const AUTH_COOKIE: &str = "session-token";
 
 #[derive(sqlx::FromRow, serde::Serialize)]
 pub struct Session {
-    id: String,
+    pub id: String,
     secret_hash: String,
     created_at: i64,
-    user: u32
+    pub user: u32
 }
 
 pub struct Token {

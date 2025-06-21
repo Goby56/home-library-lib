@@ -3,11 +3,7 @@ import { superValidate, fail, message, setError } from "sveltekit-superforms";
 import { zod } from "sveltekit-superforms/adapters";
 import { bookFormSchema } from "./book-form-schema.js";
 import { parseDate } from 'chrono-node';
-// import { fail } from "@sveltejs/kit";
-import axios from "axios";
-import placeHolderImage from "$lib/assets/placeholder_image.webp";
 import { redirect } from "@sveltejs/kit";
-import { BACKEND_URL, backendPOST } from "$lib/utils.js";
 
 const GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes?q=isbn:";
 

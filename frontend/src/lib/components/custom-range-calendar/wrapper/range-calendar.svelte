@@ -97,7 +97,7 @@
 				<RangeCalendar.Grid>
 					<RangeCalendar.GridHead>
             {#if months.length > 1} 
-              <div class="flex justify-center items-center">
+              <div class="flex justify-center items-center p-2">
                 {MONTHS[month.value.month-1]}
               </div>
             {/if}

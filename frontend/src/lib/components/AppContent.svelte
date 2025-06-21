@@ -3,7 +3,7 @@
 
 </script>
 
-<div class="flex justify-between content-center mt-20 mx-8">
+<div class="flex justify-between content-center pt-20 mx-8">
   <div class="flex-col w-0 md:w-1/4">
     {@render leftMargin?.()} 
   </div>

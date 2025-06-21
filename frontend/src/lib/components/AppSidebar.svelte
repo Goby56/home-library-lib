@@ -3,6 +3,7 @@
   import House from "@lucide/svelte/icons/house";
   import Inbox from "@lucide/svelte/icons/inbox";
   import Search from "@lucide/svelte/icons/search";
+  import AppLogo from "$lib/assets/rose_icon.svelte";
   import Settings from "@lucide/svelte/icons/settings";
   import Sailboat from "@lucide/svelte/icons/sailboat";
   import ChartColumnStacked from "@lucide/svelte/icons/chart-column-stacked";
@@ -47,11 +48,6 @@
   ];
   const menuItems = [
     {
-      title: "Hem",
-      url: "/",
-      icon: House,
-    },
-    {
       title: "Lägg tilll föremål",
       url: "/add",
       icon: Plus,
@@ -89,32 +85,18 @@
 </div>
 -->
  
-<Sidebar.Root variant="sidebar" >
+<Sidebar.Root variant="sidebar">
   <Sidebar.Header class="bg-popover">
-    <SidebarToggleButton/>
+    <div class="flex justify-start items-center gap-2 z-10">
+      <SidebarToggleButton/>
+      <a class="flex justify-center items-center gap-3 text-3xl font-semibold" href="/">
+        <AppLogo/>
+        Rosenport
+      </a>
+    </div>
   </Sidebar.Header>
   <Sidebar.Content class="bg-popover">
     <Sidebar.Group>
-      <Sidebar.GroupLabel>Kategorier</Sidebar.GroupLabel>
-      <Sidebar.GroupContent>
-        <Sidebar.Menu>
-          {#each categories as item (item.title)}
-            <Sidebar.MenuItem>
-              <Sidebar.MenuButton>
-                {#snippet child({ props })}
-                  <a onclick={() => sidebar.toggle()} href={item.url} {...props}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </a>
-                {/snippet}
-              </Sidebar.MenuButton>
-            </Sidebar.MenuItem>
-          {/each}
-        </Sidebar.Menu>
-      </Sidebar.GroupContent>
-    </Sidebar.Group>
-    <Sidebar.Group>
-      <Sidebar.GroupLabel>Meny</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
           {#each menuItems as item (item.title)}

@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 import { error } from "@sveltejs/kit";
 
 import placeHolderImage from "$lib/assets/placeholder_image.webp";
-import { BACKEND_URL } from '$lib/utils';
+import { BACKEND_URL } from '$lib/utils-server';
 
 export let load: PageServerLoad = async ({ fetch, params }) => {
     let bookResponse = await fetch(BACKEND_URL + "/book/" + params.isbn);

@@ -12,8 +12,8 @@
   import { getLocalTimeZone, now, parseAbsoluteToLocal, today, ZonedDateTime, type DateValue } from "@internationalized/date";
   import ShelfSelector from "$lib/components/ShelfSelector.svelte";
   import PhysicalBookSelector from './PhysicalBookSelector.svelte';
-  import ReservationCalendar from './ReservationCalendar.svelte';
-    import { invalidateAll } from '$app/navigation';
+  import ReservationCalendar from '$lib/components/ReservationCalendar.svelte';
+  import { invalidateAll } from '$app/navigation';
  
 	let { data }: PageProps = $props();
 

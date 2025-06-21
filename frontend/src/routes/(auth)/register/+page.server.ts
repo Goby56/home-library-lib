@@ -4,7 +4,7 @@ import { superValidate } from "sveltekit-superforms";
 import { userCredentialsSchema } from "./../user-credentials-schema.js";
 import { zod } from "sveltekit-superforms/adapters";
 import axios from "axios";
-import { BACKEND_URL, setSessionCookie } from "$lib/utils.js";
+import { BACKEND_URL, setSessionCookie } from "$lib/utils-server";
  
 export const load: PageServerLoad = async () => {
  return {

@@ -5,9 +5,10 @@
   import { MediaQuery } from "svelte/reactivity";
   import type { HighlightedRange } from "$lib/components/custom-range-calendar/base/types";
     import { isAfter, isBefore, isBetweenInclusive } from "$lib/components/custom-range-calendar/internal/date-time/utils";
+    import { boolean } from "zod";
 
-  let { reservations, numberOfMonths, value = $bindable({start: undefined, end: undefined}) }: 
-    { reservations: any[], numberOfMonths: number, value: DateRange } = $props();
+  let { reservations, numberOfMonths, value = $bindable({start: undefined, end: undefined}), disabled = false }: 
+    { reservations: any[], numberOfMonths: number, value: DateRange, disabled?: boolean } = $props();
 
   // const isDesktop = new MediaQuery("(min-width: 768px)");
 
@@ -39,4 +40,4 @@
   }
 
 </script>
-<RangeCalendar bind:value class="rounded-lg" {ranges} learnMore={onClickHightlight} fixedWeeks={false} {numberOfMonths}/>
+<RangeCalendar bind:value class="rounded-lg" {ranges} learnMore={onClickHightlight} {disabled} fixedWeeks={false} {numberOfMonths}/>

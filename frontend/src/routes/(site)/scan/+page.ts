@@ -2,7 +2,6 @@ import type { PageLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 
 const QRBOT_SCAN_URL = "https://qrbot.net/x-callback-url/scan?x-success=";
-const SELF_URL = "http://192.168.1.223:5173/scan";
 
 export const load: PageLoad = async ({ url }) => {
   const shouldRedirect = url.searchParams.get("redirect");
@@ -11,7 +10,7 @@ export const load: PageLoad = async ({ url }) => {
   // https://ioshelp.qrbot.net/xcallback
   
   if (shouldRedirect === "true") {
-    redirect(302, QRBOT_SCAN_URL + SELF_URL);
+    redirect(302, QRBOT_SCAN_URL + window.location.origin + "/scan");
   }
 
   const source = url.searchParams.get("x-source")

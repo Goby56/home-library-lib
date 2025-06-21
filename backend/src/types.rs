@@ -14,7 +14,7 @@ use time::OffsetDateTime;
 //     Book
 // }
 
-#[derive(sqlx::FromRow, serde::Serialize)]
+#[derive(sqlx::FromRow, serde::Serialize, Clone)]
 pub struct User {
     pub id: u32,
     pub username: String,
