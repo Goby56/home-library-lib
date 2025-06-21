@@ -3,7 +3,9 @@ import { superValidate, fail, message, setError } from "sveltekit-superforms";
 import { zod } from "sveltekit-superforms/adapters";
 import { bookFormSchema } from "./book-form-schema.js";
 import { parseDate } from 'chrono-node';
-import { redirect } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
+import { backendPOST } from "$lib/utils-server.js";
+import imageCompression from "browser-image-compression";
 
 const GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes?q=isbn:";
 
@@ -63,7 +65,9 @@ export const actions: Actions = {
     const formData = new FormData();
 
     formData.append("json", new Blob([JSON.stringify(book)], { type: "application/json" }))
-    formData.append("file", bookForm.data.cover)
+    if (bookForm.data.cover) {
+        formData.append("file", bookForm.data.cover);
+    }
 
     let response = await backendPOST(event.cookies, "/register_book", formData);
 

@@ -11,8 +11,16 @@
   import { parseAbsoluteToLocal } from '@internationalized/date';
   import * as Drawer from "$lib/components/ui/drawer/index.js";
   import { reservationDuration } from "$lib/utils";
+  import placeHolderImage from "$lib/assets/placeholder_image.webp";
+
  
 	let { data }: PageProps = $props();
+
+  async function getBookCover(isbn: string) {
+		return await fetch('/api/get-book-cover?isbn=' + isbn, {
+			method: 'GET',
+		});
+	}
   
   const initialColor = `#${data.user.personal_color}`;
   let selectedHex = $state(initialColor);
@@ -71,22 +79,33 @@
 </h2>
 <div class="flex flex-wrap gap-3">
   {#each data.user_reservations as rsv}
-    <button onclick={() => handleReservationClick(rsv)} class="flex flex-col items-start relative hover:bg-muted bg-muted/50 p-1 px-2 rounded-md group">
-      <p class="font-semibold">{rsv.title}</p>
-      <p class="text-muted-foreground">Hylla: {rsv.shelf.name}</p>
-      <p>{reservationDuration(rsv.reservation)}</p>
-      <Button
-        onclick={(e) => removeReservation(e, rsv)}
-        variant="destructive"
-        class="hidden md:group-hover:flex size-6 rounded-full absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2"
-        size="icon"
-        >
-        {#if pendingReservationRemoval}
-          <LoaderCircleIcon/>
-        {:else}
-          <RemoveIcon/>
-        {/if}
-      </Button>
+    <button onclick={() => handleReservationClick(rsv)} class="flex relative hover:bg-muted bg-muted/50 p-1 px-2 rounded-md group">
+    <!--
+      {#await getBookCover(book.isbn)}
+        <img src={placeHolderImage} alt="{book.title} book cover" class="rounded-md h-48">
+      {:then coverImage} 
+        <img src={coverImage.url} alt="{book.title} book cover" class="rounded-md h-48">
+      {:catch}
+        <img src={placeHolderImage} alt="{book.title} book cover" class="rounded-md h-48">
+      {/await}
+    -->
+      <div class="flex flex-col items-start">
+        <p class="font-semibold">{rsv.title}</p>
+        <p class="text-muted-foreground">Hylla: {rsv.shelf.name}</p>
+        <p>{reservationDuration(rsv.reservation)}</p>
+        <Button
+          onclick={(e) => removeReservation(e, rsv)}
+          variant="destructive"
+          class="hidden md:group-hover:flex size-6 rounded-full absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2"
+          size="icon"
+          >
+          {#if pendingReservationRemoval}
+            <LoaderCircleIcon/>
+          {:else}
+            <RemoveIcon/>
+          {/if}
+        </Button>
+      </div>
     </button>
   {:else}
     <p class="text-muted-foreground">Du har inga reservationer</p>

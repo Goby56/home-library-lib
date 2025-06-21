@@ -11,7 +11,7 @@ use crate::{auth::{self, Session}, database, types, AppState};
 #[derive(Debug, MultipartForm)]
 struct ShelveForm {
     #[multipart(limit = "100MB")]
-    file: TempFile,
+    file: Option<TempFile>,
     json: MpJson<types::Book>,
 }
 
@@ -22,15 +22,16 @@ pub async fn register_book(state: Data<AppState>, MultipartForm(form): Multipart
         Ok(None) => return Err(actix_web::error::ErrorInternalServerError("Could not create book")),
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
+    if let Some(file) = form.file {
+        let reader = BufReader::new(file.file.reopen()?);
+        let img = ImageReader::new(reader).with_guessed_format()?.decode()
+            .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
+        img.save(format!("./backend/db/images/book_covers/{}.webp", form.json.isbn))
+            .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
+        return Ok(format!("Shelved {}. Access its cover at '/book_cover/{}.webp'", form.json.title, form.json.isbn));
+    }
 
-    let reader = BufReader::new(form.file.file.reopen()?);
-    let img = ImageReader::new(reader).with_guessed_format()?.decode()
-        .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-
-    img.save(format!("./backend/db/images/book_covers/{}.webp", form.json.isbn))
-        .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-
-    Ok(format!("Shelved {}. Access its cover at '/book_cover/{}.webp'", form.json.title, form.json.isbn))
+    Ok(format!("Shelved {}. No cover provided", form.json.title))
 }
 
 #[derive(Deserialize)]

@@ -18,14 +18,18 @@
   Alla föremål
 </h2>
 
-<div class="grid auto-rows-min gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5 p-4">
+<div class="grid auto-rows-min gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5 py-2 md:p-4">
   {#each data.books as book} 
     <div class="flex hover:shadow-md flex-col bg-muted/50 p-3 gap-3 rounded-md">
       <a class="flex justify-center" href="/book/{book.isbn}" >
         {#await getBookCover(book.isbn)}
           <img src={placeHolderImage} alt="{book.title} book cover" class="rounded-md h-48">
-        {:then coverImage} 
-          <img src={coverImage.url} alt="{book.title} book cover" class="rounded-md h-48">
+        {:then coverImage}
+          {#if coverImage.status == 200}
+            <img src={coverImage.url} alt="{book.title} book cover" class="rounded-md h-48">
+          {:else}
+            <img src={placeHolderImage} alt="{book.title} book cover" class="rounded-md h-48">
+          {/if}
         {:catch}
           <img src={placeHolderImage} alt="{book.title} book cover" class="rounded-md h-48">
         {/await}

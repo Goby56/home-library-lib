@@ -1,8 +1,11 @@
 import { z } from "zod";
 
-const imageFileValidator = (file: File) => {
-    const acceptedTypes = ['image/webp', 'image/jpeg', 'image/png'];
-    return acceptedTypes.includes(file.type) 
+const imageFileValidator = (file: File | undefined) => {
+    if (file) {
+        const acceptedTypes = ['image/webp', 'image/jpeg', 'image/png'];
+        return acceptedTypes.includes(file.type) 
+    }
+    return true;
 };
 
 export const bookFormSchema = z.object({
@@ -13,9 +16,9 @@ export const bookFormSchema = z.object({
     language: z.string().min(2),
     page_count: z.number(),
     genres: z.array(z.string().min(1)).default([""]),
-    cover: z.instanceof(File).refine(imageFileValidator, {
+    cover: z.instanceof(File).optional().refine(imageFileValidator, {
       message: "The file must be an image of format WebP, JPEG, or PNG"
-    }).refine((f) => f.size < 100_000, 'Max 100 kB upload size.')
+    })
 })
 
 export type FormSchema = typeof bookFormSchema;

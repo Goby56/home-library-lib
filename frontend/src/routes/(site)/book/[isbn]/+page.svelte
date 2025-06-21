@@ -105,7 +105,7 @@
 
 <div class="flex flex-col pb-3 md:mb-0 mb-20">
   <div class="grid md:grid-cols-2 grid-cols-1 gap-3">
-    <div class="flex justify-center">
+    <div class="flex justify-center items-center">
       <img src="{coverImage}" alt="book cover"
       class="rounded-xl md:h-80 h-60">
     </div>

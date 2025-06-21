@@ -16,6 +16,7 @@
   import DropdownSelector from "$lib/components/DropdownSelector.svelte";
   import ArrayFormElement from "$lib/components/ArrayFormElement.svelte";
   import placeHolderImage from "$lib/assets/placeholder_image.webp";
+    import imageCompression from "browser-image-compression";
  
   let { data }: { data: { form: SuperValidated<Infer<FormSchema>> } } =
     $props();
@@ -28,14 +29,25 @@
 
   const coverImageFile = fileProxy(form, 'cover')
   let coverImageURL = $state(placeHolderImage);
+  let pendingCompression = $state(false);
 
   function onCoverImageChange(event: Event) {
     const files = (event.target as HTMLInputElement).files;
     if (files && files.length > 0) {
-      coverImageURL = URL.createObjectURL(files[0])
+      const originalImage = files[0];
+      coverImageURL = URL.createObjectURL(originalImage)
+      pendingCompression = true;
+      imageCompression(originalImage, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+      }).then(compressed => {
+          coverImageFile.set(compressed)
+          coverImageURL = URL.createObjectURL(compressed)
+          pendingCompression = false;
+      })
     }
   }
-
 </script>
  
 <form method="POST" use:enhance id="book-form" enctype="multipart/form-data" class="flex flex-col gap-3 p-3">
@@ -130,13 +142,17 @@
       </div>
       <Button variant="outline" class="relative">
         Välj bokomslag
-        <input class="absolute w-full opacity-0" type="file" name="cover" bind:files={$coverImageFile} oninput={onCoverImageChange} multiple={false} accept="image/webp, image/png, image/jpeg" required/>
+        <input class="absolute w-full opacity-0" type="file" name="cover" bind:files={$coverImageFile} oninput={onCoverImageChange} multiple={false} accept="image/webp, image/png, image/jpeg"/>
       </Button>
     </div>
   </div>
 
   <div class="flex md:justify-end justify-center">
-  <Form.Button>Lägg till bok</Form.Button>
+  {#if pendingCompression}
+    <Form.Button disabled>Lägg till bok</Form.Button>
+  {:else}
+    <Form.Button>Lägg till bok</Form.Button>
+  {/if}
   </div>
 </form>
 

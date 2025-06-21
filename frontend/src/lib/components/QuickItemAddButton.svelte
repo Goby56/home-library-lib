@@ -24,7 +24,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item>
           <ScanBarcode/>
-          <a href="/scan?redirect=true">Scanna in en bok</a>
+          <a href="/api/scan?redirect=true">Scanna in en bok</a>
         </DropdownMenu.Item>
         <DropdownMenu.Item onclick={() => (isbnDialogOpen = true)}> 
             <Hash/>
