@@ -12,6 +12,7 @@
   import * as Drawer from "$lib/components/ui/drawer/index.js";
   import { reservationDuration } from "$lib/utils";
   import placeHolderImage from "$lib/assets/placeholder_image.webp";
+    import { mode } from 'mode-watcher';
 
  
 	let { data }: PageProps = $props();
@@ -59,7 +60,7 @@
 <div class="flex gap-5">
   <div class="flex flex-col items-center size-24 md:size-32 rounded-3xl relative group" style="background-color: {selectedHex}">
     <input type="color" class="opacity-0 aspect-square size-full" bind:value={selectedHex}>
-    <EditIcon class="group-hover:opacity-100 opacity-0 pointer-events-none size-12 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"/>
+    <EditIcon class="{mode.current == "light" ? "text-background" : "text-foreground"} group-hover:opacity-100 opacity-0 pointer-events-none size-12 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"/>
     {#if hasChangedColor}
       <Button class="text-muted-foreground p-0 pt-1 h-fit" variant="link">Byt till vald färg</Button>
     {/if}
@@ -92,6 +93,7 @@
       <div class="flex flex-col items-start">
         <p class="font-semibold">{rsv.title}</p>
         <p class="text-muted-foreground">Hylla: {rsv.shelf.name}</p>
+        <div class="flex flex-col md:flex-row">
         <p>{reservationDuration(rsv.reservation)}</p>
         <Button
           onclick={(e) => removeReservation(e, rsv)}
