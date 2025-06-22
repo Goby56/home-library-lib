@@ -11,11 +11,11 @@ const imageFileValidator = (file: File | undefined) => {
 export const bookFormSchema = z.object({
     isbn: z.string().min(10).max(13),
     title: z.string().min(1),
-    authors: z.array(z.string().min(1)).min(1).default([""]),
+    authors: z.string().min(1),
+    genres: z.string(),
     publication_year: z.number().default(new Date().getFullYear()),
-    language: z.string().min(2),
     page_count: z.number(),
-    genres: z.array(z.string().min(1)).default([""]),
+    language: z.string().min(2),
     cover: z.instanceof(File).optional().refine(imageFileValidator, {
       message: "The file must be an image of format WebP, JPEG, or PNG"
     })

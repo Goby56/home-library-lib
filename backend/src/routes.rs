@@ -6,29 +6,41 @@ use actix_web::{get, post, web::{self, Data}, HttpMessage, HttpRequest, Responde
 use actix_multipart::form::{json::Json as MpJson, tempfile::TempFile, MultipartForm};
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
+use uuid::Uuid;
 use crate::{auth::{self, Session}, database, types, AppState};
 
 #[derive(Debug, MultipartForm)]
 struct ShelveForm {
     #[multipart(limit = "100MB")]
     file: Option<TempFile>,
-    json: MpJson<types::Book>,
+    json: MpJson<BookForm>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct BookForm {
+    pub isbn: Option<String>,
+    pub title: String,
+    pub authors: String,
+    pub genres: Option<String>,
+    pub publication_year: Option<i16>,
+    pub page_count: Option<u16>,
+    pub language: Option<String>,
 }
 
 #[post("/register_book")]
 pub async fn register_book(state: Data<AppState>, MultipartForm(form): MultipartForm<ShelveForm>) -> actix_web::Result<String> {
-    let _book_id = match database::insert_book(&state.db, form.json.clone()).await {
-        Ok(Some(book_id)) => book_id,
-        Ok(None) => return Err(actix_web::error::ErrorInternalServerError("Could not create book")),
+    let uuid = match database::insert_book(&state.db, form.json.clone()).await {
+        Ok(uuid) => uuid.to_string(),
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
+
     if let Some(file) = form.file {
         let reader = BufReader::new(file.file.reopen()?);
         let img = ImageReader::new(reader).with_guessed_format()?.decode()
             .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-        img.save(format!("./backend/db/images/book_covers/{}.webp", form.json.isbn))
+        img.save(format!("./backend/db/images/book_covers/{}.webp", uuid.clone()))
             .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-        return Ok(format!("Shelved {}. Access its cover at '/book_cover/{}.webp'", form.json.title, form.json.isbn));
+        return Ok(format!("Shelved {}. Access its cover at '/book_cover/{}.webp'", form.json.title, uuid));
     }
 
     Ok(format!("Shelved {}. No cover provided", form.json.title))
@@ -36,23 +48,23 @@ pub async fn register_book(state: Data<AppState>, MultipartForm(form): Multipart
 
 #[derive(Deserialize)]
 struct ShelfInfo {
-    isbn: String,
+    uuid: Uuid,
     name: String
 }
 
 #[post("/add_physical_book")]
 pub async fn add_physical_book(state: Data<AppState>, shelf_data: web::Json<ShelfInfo>) -> actix_web::Result<String> {
-    let shelf = database::get_or_create_shelf(&state.db, &shelf_data.name).await
+    let shelf = database::get_shelf(&state.db, None, Some(&shelf_data.name)).await
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-    let book = database::get_books(&state.db, None, Some(&shelf_data.isbn), Some(1), true).await
-        .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?.pop();
+    let book = database::get_book(&state.db, None, Some(shelf_data.uuid)).await
+        .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
     return match (book, shelf) {
-        (Some(book), Some(shelf)) => {
+        (book, Some(shelf)) => {
             database::create_physical_book(&state.db, book.id, shelf.id).await
                 .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
             Ok(format!("Added a physical copy of {} to shelf {}", book.title, shelf.name))
         },
-        _ => Err(actix_web::error::ErrorNotFound("Couldn't find book or create shelf")),
+        _ => Err(actix_web::error::ErrorNotFound("Couldn't find book or shelf")),
     };
 }
 
@@ -169,22 +181,20 @@ struct MultipleBooksResponse {
 #[derive(serde::Deserialize)]
 struct BookSearchQueryParams {
     search_str: Option<String>,
-    isbn: Option<String>,
     limit: Option<u32>,
-    include_non_physical: Option<bool>
+    only_physical: Option<bool>
 }
 
 #[get("/books")]
 pub async fn get_books(state: Data<AppState>, query: web::Query<BookSearchQueryParams>) -> Result<impl Responder> {
-    let include_non_physical = match query.include_non_physical {
-        Some(true) => true,
-        _ => false
+    let only_physical = match query.only_physical {
+        Some(false) => false,
+        _ => true
     };
-    match database::get_books(&state.db, 
+    match database::query_books(&state.db, 
         query.search_str.as_deref(), 
-        query.isbn.as_deref(), 
         query.limit, 
-        include_non_physical
+        only_physical
         ).await {
         Ok(books) => Ok(web::Json(MultipleBooksResponse { books })),
         _ => Ok(web::Json(MultipleBooksResponse { books: vec![] })),
@@ -197,11 +207,10 @@ struct SingleBookResponse {
     copies: Vec<types::PhysicalBook>
 }
 
-#[get("/book/{isbn}")]
+#[get("/book/{identifier}")]
 pub async fn get_book(state: Data<AppState>, path: web::Path<(String,)>) -> Result<impl Responder> {
-    match database::get_physical_copies(&state.db, &path.into_inner().0).await {
-        Ok((Some(book), copies)) => Ok(web::Json(SingleBookResponse { book, copies })),
-        Ok((None, _)) => Err(actix_web::error::ErrorNotFound("Book not found")),
+    match database::get_physical_copies(&state.db, path.into_inner().0).await {
+        Ok((book, copies)) => Ok(web::Json(SingleBookResponse { book, copies })),
         Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string())),
     }
 }

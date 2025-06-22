@@ -1,15 +1,13 @@
-CREATE TABLE "Author" (
-	"id"	INTEGER NOT NULL UNIQUE,
-	"name"	TEXT NOT NULL UNIQUE,
-	PRIMARY KEY("id" AUTOINCREMENT)
-);
 CREATE TABLE "Book" (
 	"id"	INTEGER NOT NULL UNIQUE,
-	"isbn"	TEXT NOT NULL UNIQUE,
+    "uuid" TEXT NOT NULL UNIQUE,
+	"isbn"	TEXT UNIQUE,
 	"title"	TEXT NOT NULL,
-	"publication_year"	INTEGER NOT NULL,
-	"page_count"	INTEGER NOT NULL,
-	"language"	TEXT NOT NULL,
+    "authors" TEXT NOT NULL, -- New lines separates
+    "genres" TEXT, -- New lines separates
+	"publication_year"	INTEGER,
+	"page_count"	INTEGER,
+	"language"	TEXT, -- Language code
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 CREATE TABLE "PhysicalBook" (
@@ -20,32 +18,6 @@ CREATE TABLE "PhysicalBook" (
 	FOREIGN KEY("book") REFERENCES "Book"("id"),
 	FOREIGN KEY("shelf") REFERENCES "Shelf"("id")
 );
-CREATE TABLE "BookReservationMatch" (
-    "physical_book" INTEGER,
-    "reservation" INTEGER,
-    UNIQUE("physical_book", "reservation"),
-	FOREIGN KEY("physical_book") REFERENCES "PhysicalBook"("id") ON DELETE CASCADE,
-	FOREIGN KEY("reservation") REFERENCES "Reservation"("id") ON DELETE CASCADE
-);
-CREATE TABLE "BookContribution" (
-	"book"	INTEGER,
-	"author"	INTEGER,
-	UNIQUE("book","author"),
-	FOREIGN KEY("author") REFERENCES "Author"("id") ON DELETE CASCADE,
-	FOREIGN KEY("book") REFERENCES "Book"("id") ON DELETE CASCADE
-);
-CREATE TABLE "Genre" (
-	"id"	INTEGER NOT NULL UNIQUE,
-	"name"	TEXT NOT NULL UNIQUE,
-	PRIMARY KEY("id" AUTOINCREMENT)
-);
-CREATE TABLE "GenreMatch" (
-	"book"	INTEGER,
-	"genre"	INTEGER,
-	UNIQUE("book","genre"),
-	FOREIGN KEY("genre") REFERENCES "Genre"("id") ON DELETE CASCADE,
-	FOREIGN KEY("book") REFERENCES "Book"("id") ON DELETE CASCADE
-);
 CREATE TABLE "Reservation" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"user"	INTEGER NOT NULL,
@@ -54,6 +26,13 @@ CREATE TABLE "Reservation" (
     "end_date" TEXT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT),
     FOREIGN KEY("user") REFERENCES "User"("id") ON DELETE CASCADE
+);
+CREATE TABLE "BookReservationMatch" (
+    "physical_book" INTEGER,
+    "reservation" INTEGER,
+    UNIQUE("physical_book", "reservation"),
+	FOREIGN KEY("physical_book") REFERENCES "PhysicalBook"("id") ON DELETE CASCADE,
+	FOREIGN KEY("reservation") REFERENCES "Reservation"("id") ON DELETE CASCADE
 );
 CREATE TABLE "Shelf" (
 	"id"	INTEGER NOT NULL UNIQUE,

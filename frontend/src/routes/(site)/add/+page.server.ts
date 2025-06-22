@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ url }) => {
     form.data.isbn = isbn
     if (book != null) {
         form.data.title = book.title
-        form.data.authors = book.authors
+        form.data.authors = (book.authors as string[]).join("\n")
         let date = parseDate(book.publishedDate ?? "")
         if (date != null) {
             form.data.publication_year = date.getFullYear()
@@ -29,7 +29,7 @@ export const load: PageServerLoad = async ({ url }) => {
         form.data.page_count = book.pageCount
         form.data.language = book.language
         // Only assign genres to categories if field exists
-        book.categories && (form.data.genres = book.categories);
+        book.categories && (form.data.genres = (book.categories as string[]).join("\n"));
     } else {
         // Custom error message to show under isbn field
         form.errors.isbn = [`Could not find book with ISBN ${isbn}`]
@@ -49,17 +49,15 @@ export const actions: Actions = {
             form: bookForm,
         });
     }
-
+    
     let book = {
-        id: 0,
         isbn: bookForm.data.isbn,
         title: bookForm.data.title,
         authors: bookForm.data.authors,
-        publication_year: bookForm.data.publication_year,
-        language: bookForm.data.language,
-        page_count: bookForm.data.page_count,
         genres: bookForm.data.genres,
-        copy_ids: []
+        publication_year: bookForm.data.publication_year,
+        page_count: bookForm.data.page_count,
+        language: bookForm.data.language,
     }
 
     const formData = new FormData();

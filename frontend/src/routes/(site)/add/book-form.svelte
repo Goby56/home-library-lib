@@ -3,6 +3,7 @@
   import { Separator } from "$lib/components/ui/separator/index.js";
   import SuperDebug from "sveltekit-superforms";
   import * as Form from "$lib/components/ui/form/index.js";
+  import ImagePlusIcon from "@lucide/svelte/icons/image-plus";
   import { Input } from "$lib/components/ui/input/index.js";
   import { bookFormSchema, type FormSchema } from "./book-form-schema";
   import { languageCodes } from "$lib/utils";
@@ -16,10 +17,15 @@
   import DropdownSelector from "$lib/components/DropdownSelector.svelte";
   import ArrayFormElement from "$lib/components/ArrayFormElement.svelte";
   import placeHolderImage from "$lib/assets/placeholder_image.webp";
-    import imageCompression from "browser-image-compression";
+  import { Textarea } from "$lib/components/ui/textarea/index.js";
+  import imageCompression from "browser-image-compression";
+  import { MediaQuery } from "svelte/reactivity";
+  import { mode } from "mode-watcher";
  
   let { data }: { data: { form: SuperValidated<Infer<FormSchema>> } } =
     $props();
+  
+  const isDesktop = new MediaQuery("(min-width: 768px)");
  
   const form = superForm(data.form, {
     validators: zodClient(bookFormSchema),
@@ -76,77 +82,126 @@
   </Form.Field> 
 
   <Separator/>
-  
-  <div class="flex justify-start flex-col gap-3 md:flex-row w-full">
-    <div class="flex flex-col flex-grow gap-3">
-      <div class="flex gap-5 w-full">
-        <Form.Field {form} name="title">
-          <Form.Control>
-            {#snippet children({ props })}
-              <Form.Label class="text-base">Titel</Form.Label>
-              <Input {...props} placeholder="Bokens titel" bind:value={$formData.title} />
-            {/snippet}
-          </Form.Control>
-        </Form.Field>
 
-        <Form.Field {form} name="publication_year">
-          <Form.Control>
-            {#snippet children({ props })}
-              <Form.Label class="text-base">Publicerad</Form.Label>
-              <Input {...props} type="number" bind:value={$formData.publication_year} />
-            {/snippet}
-          </Form.Control>
-        </Form.Field>
-      </div>
+  {#snippet titleFieldSnippet()}
+    <Form.Field {form} name="title">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label class="text-base">Titel</Form.Label>
+          <Input {...props} placeholder="Bokens titel" bind:value={$formData.title} />
+        {/snippet}
+      </Form.Control>
+    </Form.Field>
+  {/snippet}
 
-      <ArrayFormElement bind:array={$formData.authors} form={form} elementName="authors" label="Författare"/>
+  {#snippet authorsFieldSnippet()}
+    <Form.Field {form} name="authors">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label class="text-base">Författare</Form.Label>
+          <Textarea {...props} placeholder={`George Orwell\nTolkien\n...`} bind:value={$formData.authors} />
+        {/snippet}
+      </Form.Control>
+    </Form.Field>
+  {/snippet}
 
-      <div class="flex gap-5 w-full">
-        <Form.Field {form} name="page_count">
-          <Form.Control>
-            {#snippet children({ props })}
-              <Form.Label class="text-base">Antal sidor</Form.Label>
-              <Input {...props} type="number" bind:value={$formData.page_count} />
-            {/snippet}
-          </Form.Control>
-        </Form.Field>
+  {#snippet genresFieldSnippet()}
+    <Form.Field {form} name="genres">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label class="text-base">Genre</Form.Label>
+          <Textarea {...props} placeholder={`Sci-fi\nRomance\n...`} bind:value={$formData.genres} />
+        {/snippet}
+      </Form.Control>
+    </Form.Field>
+  {/snippet}
 
-        <Form.Field {form} name="language">
-          <Form.Control>
-            {#snippet children({ props })}
-              <Form.Label class="text-base">Språk</Form.Label>
-              <div>
-                <DropdownSelector 
-                  bind:value={$formData.language} 
-                  items={languageCodes}
-                  name="language"
-                  translations={{
-                    choose: "Välj ett språk...",
-                    search: "Sök efter ett språk",
-                    notFound: "Kunde inte hitta språket"
-                  }}/>
-              </div>
-            {/snippet}
-          </Form.Control>
-          <Form.Description>
-	      	</Form.Description>
-        </Form.Field>
-      </div>
+  {#snippet pubYearFieldSnippet()}
+    <Form.Field {form} name="publication_year">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label class="text-base">Publicerad</Form.Label>
+          <Input {...props} placeholder="Årtal" type="number" bind:value={$formData.publication_year} />
+        {/snippet}
+      </Form.Control>
+    </Form.Field>
+  {/snippet}
 
-      <ArrayFormElement bind:array={$formData.genres} form={form} elementName="genres" label="Genre"/>
-    </div>
-    <div class="flex flex-col items-center gap-3">
-      <div>
+  {#snippet pageCountFieldSnippet()}
+    <Form.Field {form} name="page_count">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label class="text-base">Antal sidor</Form.Label>
+          <Input {...props} type="number" bind:value={$formData.page_count} />
+        {/snippet}
+      </Form.Control>
+    </Form.Field>
+  {/snippet}
+
+  {#snippet languageFieldSnippet()}
+    <Form.Field {form} name="language">
+      <Form.Control>
+        {#snippet children({ props })}
+          <Form.Label class="text-base">Språk</Form.Label>
+          <div>
+            <DropdownSelector 
+              bind:value={$formData.language} 
+              items={languageCodes}
+              name="language"
+              translations={{
+                choose: "Välj ett språk...",
+                search: "Sök efter ett språk",
+                notFound: "Kunde inte hitta språket"
+              }}/>
+          </div>
+        {/snippet}
+      </Form.Control>
+      <Form.Description>
+	  	</Form.Description>
+    </Form.Field>
+  {/snippet}
+
+  <div class="flex flex-col gap-3">
+    <div class="flex gap-3 justify-start">
+      <div class="h-60 md:h-80 aspect-[2/3] relative group">
         <img src="{coverImageURL}" alt="book cover"
-        class="rounded-xl h-80">
+        class="rounded-xl object-contain w-full h-full">
+        <input class="absolute top-0 w-full h-full opacity-0" type="file" name="cover" bind:files={$coverImageFile} oninput={onCoverImageChange} multiple={false} accept="image/webp, image/png, image/jpeg"/>
+        <ImagePlusIcon class="bg-background/75 rounded-md p-1 group-hover:scale-110 pointer-events-none size-12 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"/>
       </div>
-      <Button variant="outline" class="relative">
-        Välj bokomslag
-        <input class="absolute w-full opacity-0" type="file" name="cover" bind:files={$coverImageFile} oninput={onCoverImageChange} multiple={false} accept="image/webp, image/png, image/jpeg"/>
-      </Button>
+      
+      <div class="flex flex-col gap-3 flex-1">
+        {#if isDesktop.current}
+          {@render titleFieldSnippet()}
+          <div class="flex gap-3">
+            {@render authorsFieldSnippet()}
+            {@render genresFieldSnippet()}
+          </div>
+          <p class="text-muted-foreground">Ange ytterligare författare och genrer på nya rader</p>
+          <div class="flex gap-3">
+            {@render pubYearFieldSnippet()}
+            {@render pageCountFieldSnippet()}
+            {@render languageFieldSnippet()}
+          </div>
+        {:else}
+          {@render pubYearFieldSnippet()}
+          {@render pageCountFieldSnippet()}
+          {@render languageFieldSnippet()}
+        {/if}
+      </div>
     </div>
-  </div>
 
+    {#if !isDesktop.current}
+      {@render titleFieldSnippet()}
+      <div class="flex gap-3">
+        {@render authorsFieldSnippet()}
+        {@render genresFieldSnippet()}
+      </div>
+      <p class="text-muted-foreground">Ange ytterligare författare och genrer på nya rader</p>
+    {/if}
+
+  </div>
+  
   <div class="flex md:justify-end justify-center">
   {#if pendingCompression}
     <Form.Button disabled>Lägg till bok</Form.Button>

@@ -45,7 +45,7 @@
     {#snippet child({ props })}
       <Button
         variant="outline"
-        class="w-[200px] justify-between"
+        class="justify-between"
         {...props}
         role="combobox"
         aria-expanded={open}

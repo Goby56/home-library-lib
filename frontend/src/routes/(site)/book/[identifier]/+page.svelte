@@ -89,7 +89,7 @@
     const response = await fetch('/api/book-operations/add-copy', {
   		method: 'POST',
   		body: JSON.stringify({
-        isbn: data.book.isbn,
+        uuid: data.book.uuid,
         shelf_name: selectedShelf
       }),
   		headers: {
@@ -114,7 +114,7 @@
       <h1 class="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
       {data.book.title}
       </h1>
-      <div class="flex">
+      <div class="flex gap-1">
         {#each data.book.authors as author, i (author)}
           <span>{author}{i < data.book.authors.length - 1 ? ', ' : ''}</span>
         {/each}

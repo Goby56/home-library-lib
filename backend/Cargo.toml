@@ -21,8 +21,9 @@ sha2 = "0.10.9"
 argon2 = "0.5.3"
 log = "0.4.27"
 hex = "0.4.3"
+uuid = { version = "1.17.0", features = ["serde", "v4"]}
 
 [dependencies.sqlx]
 version = "0.8"
 default-features = false
-features = ["macros", "migrate", "runtime-tokio", "tls-native-tls", "sqlite", "time"]
+features = ["macros", "migrate", "runtime-tokio", "tls-native-tls", "sqlite", "time", "uuid"]

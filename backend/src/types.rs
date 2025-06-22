@@ -1,42 +1,37 @@
 
 use time::OffsetDateTime;
+use uuid::Uuid;
 
-pub trait Location {
-
-}
-
-pub trait Item {
-    fn item_type() -> ItemType;
-
-    fn repr() -> String;
-
-    fn location() -> impl Location;
-
-    fn data<T: serde::Serialize>() -> T;
-}
-
-pub enum ItemType {
-    Book(Book, PhysicalBook)
-}
-
-pub struct GenericItem {
-    item_type: ItemType,
-    name: String,
-    location: String,
-    reservation: Reservation,
-}
+// pub trait Location {
+// 
+// }
+// 
+// pub trait Item {
+//     fn item_type() -> ItemType;
+// 
+//     fn repr() -> String;
+// 
+//     fn location() -> impl Location;
+// 
+//     fn data<T: serde::Serialize>() -> T;
+// }
+// 
+// pub enum ItemType {
+//     Book(Book, PhysicalBook)
+// }
+// 
+// pub struct GenericItem {
+//     item_type: ItemType,
+//     name: String,
+//     location: String,
+//     reservation: Reservation,
+// }
 
 #[derive(sqlx::FromRow, serde::Serialize, Clone)]
 pub struct User {
     pub id: u32,
     pub username: String,
     pub personal_color: String,
-}
-
-#[derive(sqlx::FromRow)]
-pub struct BookReservationMatch {
-    pub physical_book: u32,
-    pub reservation: u32
 }
 
 #[derive(serde::Serialize)]
@@ -66,13 +61,14 @@ pub struct Shelf {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Book {
     pub id: u32,
-    pub isbn: String,
+    pub uuid: Uuid,
+    pub isbn: Option<String>,
     pub title: String,
     pub authors: Vec<String>,
-    pub publication_year: i16,
     pub genres: Vec<String>,
-    pub page_count: u16,
-    pub language: String,
+    pub publication_year: Option<i16>,
+    pub page_count: Option<u16>,
+    pub language: Option<String>,
     pub copy_ids: Vec<u32>
 }
 
