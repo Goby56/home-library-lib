@@ -14,7 +14,7 @@ export let load: PageServerLoad = async ({ fetch, params }) => {
     }
 
     let book = await bookResponse.json();
-    let coverImage = BACKEND_URL + "/book_cover/" + book.uuid + ".webp";
+    let coverImage = BACKEND_URL + "/book_cover/" + book.book.uuid + ".webp";
     coverImage = await fetch(coverImage, { method: "HEAD" })
         .then(res => res.ok ? coverImage : placeHolderImage)
         .catch(_ => placeHolderImage)

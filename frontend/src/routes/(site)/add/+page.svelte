@@ -1,8 +1,8 @@
 <script lang="ts">
+    import { onMount } from "svelte";
   import type { PageProps } from "./$types.js";
   import BookForm from "./book-form.svelte";
   let { data, form }: PageProps = $props();
-
 </script>
 
 <h2

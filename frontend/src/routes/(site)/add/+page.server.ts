@@ -14,6 +14,8 @@ export const load: PageServerLoad = async ({ url }) => {
 
   const isbn = url.searchParams.get("isbn")
 
+  let coverURL = "";
+
   if (isbn != null) {
     let book = await fetchBook(isbn)
     form.data.isbn = isbn
@@ -30,6 +32,8 @@ export const load: PageServerLoad = async ({ url }) => {
         form.data.language = book.language
         // Only assign genres to categories if field exists
         book.categories && (form.data.genres = (book.categories as string[]).join("\n"));
+        
+        coverURL = book.imageLinks?.thumbnail;
     } else {
         // Custom error message to show under isbn field
         form.errors.isbn = [`Could not find book with ISBN ${isbn}`]
@@ -37,7 +41,8 @@ export const load: PageServerLoad = async ({ url }) => {
   }
   
   return {
-    form: form
+    form: form,
+    coverURL
   };
 };
 
@@ -60,11 +65,17 @@ export const actions: Actions = {
         language: bookForm.data.language,
     }
 
+    const coverURL = await fetchBook(book.isbn).then(b => b.imageLinks?.thumbnail);
+
+    const cover = await fetchBookCover(coverURL);
+
     const formData = new FormData();
 
     formData.append("json", new Blob([JSON.stringify(book)], { type: "application/json" }))
     if (bookForm.data.cover) {
         formData.append("file", bookForm.data.cover);
+    } else if (cover) {
+        formData.append("file", cover);
     }
 
     let response = await backendPOST(event.cookies, "/register_book", formData);
@@ -82,3 +93,17 @@ async function fetchBook(isbn: string | null) {
     return resp?.items?.[0]?.volumeInfo
 }
 
+async function fetchBookCover(url: string) {
+    try {
+        const blob = await fetch(url).then(resp => resp.blob());
+        return new File([blob], `cover.${extensions[blob.type]}`, { type: blob.type });
+    } catch {
+        return undefined
+    }
+}
+
+const extensions: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp"
+};

@@ -16,12 +16,6 @@
 
  
 	let { data }: PageProps = $props();
-
-  async function getBookCover(isbn: string) {
-		return await fetch('/api/get-book-cover?isbn=' + isbn, {
-			method: 'GET',
-		});
-	}
   
   const initialColor = `#${data.user.personal_color}`;
   let selectedHex = $state(initialColor);

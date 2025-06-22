@@ -22,7 +22,7 @@
   import { MediaQuery } from "svelte/reactivity";
   import { mode } from "mode-watcher";
  
-  let { data }: { data: { form: SuperValidated<Infer<FormSchema>> } } =
+  let { data }: { data: { form: SuperValidated<Infer<FormSchema>> } & any } =
     $props();
   
   const isDesktop = new MediaQuery("(min-width: 768px)");
@@ -34,7 +34,7 @@
   const { form: formData, enhance, errors } = form;
 
   const coverImageFile = fileProxy(form, 'cover')
-  let coverImageURL = $state(placeHolderImage);
+  let coverImageURL = $state(data.coverURL ?? placeHolderImage);
   let pendingCompression = $state(false);
 
   function onCoverImageChange(event: Event) {

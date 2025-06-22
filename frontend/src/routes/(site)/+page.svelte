@@ -20,8 +20,8 @@
 
 <div class="grid auto-rows-min gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5 py-2 md:p-4">
   {#each data.books as book} 
-    <div class="flex hover:shadow-md flex-col bg-muted/50 p-3 gap-3 rounded-md">
-      <a class="flex justify-center" href="/book/{book.isbn ?? book.uuid}" >
+    <a href="/book/{book.isbn ?? book.uuid}" class="flex hover:shadow-md flex-col bg-muted/50 p-3 gap-3 rounded-md">
+      <div class="flex justify-center" >
         {#await getBookCover(book.uuid)}
           <img src={placeHolderImage} alt="{book.title} book cover" class="rounded-md h-48">
         {:then coverImage}
@@ -33,17 +33,20 @@
         {:catch}
           <img src={placeHolderImage} alt="{book.title} book cover" class="rounded-md h-48">
         {/await}
-      </a>
+      </div>
       <div class="flex flex-col">
-        <a href="/book/{book.isbn ?? book.uuid}"><h4 class="line-clamp-2 scroll-m-20 text-xl font-semibold tracking-tight">
-        {book.title}</h4></a>
-        <div class="flex justify-start">
-          {#each book.authors as author}
-            <p>{author}</p>
-          {/each}
+        <h4 class="line-clamp-2 scroll-m-20 text-xl font-semibold tracking-tight">
+          {book.title}
+        </h4>
+        <div class="flex gap-1">
+          <span class="line-clamp-1">
+            {#each book.authors as author, i (author)}
+              {author}{i < book.authors.length - 1 ? ', ' : ''}
+            {/each}
+          </span>
         </div>
       </div>
- </div>
+    </a>
   {/each}
 </div>
 
