@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ url }) => {
     form.data.isbn = isbn
     if (book != null) {
         form.data.title = book.title
-        form.data.authors = (book.authors as string[]).join("\n")
+        form.data.authors = (book.authors as string[]).join("\n") // TODO authors may be undefined?
         let date = parseDate(book.publishedDate ?? "")
         if (date != null) {
             form.data.publication_year = date.getFullYear()
