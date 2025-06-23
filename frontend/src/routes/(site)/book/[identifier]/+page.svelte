@@ -17,7 +17,7 @@
  
 	let { data }: PageProps = $props();
 
-  let coverImage = data.cover;
+  let coverImage = $derived(data.cover);
 
   let shelves = $derived(data.shelves);
 
@@ -30,19 +30,6 @@
     start,
     end
   });
-
-  function isDateUnavailable(date: DateValue): boolean {
-    if (selectedCopy) {
-      if (selectedCopy.reservation) {
-      const start = parseAbsoluteToLocal(selectedCopy.reservation.start_date);
-      const end = parseAbsoluteToLocal(selectedCopy.reservation.end_date);
-        if (start && end) {
-          return date.compare(start) >= 0 && date.compare(end) <= 0;
-        }
-      }
-    }
-    return false;
-  }
 
   let reservationDuration = $derived.by(() => {
     if (reservationDates.start && reservationDates.end) {

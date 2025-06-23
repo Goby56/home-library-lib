@@ -424,33 +424,39 @@ pub async fn query_books(
     only_physical: bool,
 ) -> Result<Vec<types::Book>, sqlx::Error> {
     let sq = format!("
+        WITH RankedBooks AS (
+            SELECT 
+                *,
+                bm25(BookFts, 0, 8, 4, 2) AS rank
+            FROM Book
+            INNER JOIN BookFts ON BookFts.book_id = Book.id
+            {}
+            ORDER BY rank
+            LIMIT ?
+        )
         SELECT 
-            Book.id as id,
-            Book.uuid,
-            Book.isbn,
-            Book.title,
-            Book.authors,
-            Book.genres,
-            Book.publication_year,
-            Book.page_count,
-            Book.language,
-            GROUP_CONCAT(DISTINCT PhysicalBook.id) as copies
-        FROM Book
-        {}JOIN PhysicalBook ON Book.id = PhysicalBook.book
-        INNER JOIN BookFts ON BookFts.book_id = Book.id
-        {}
-        GROUP BY Book.id
-        LIMIT ?",
+            RankedBooks.id,
+            RankedBooks.uuid,
+            RankedBooks.isbn,
+            RankedBooks.title,
+            RankedBooks.authors,
+            RankedBooks.genres,
+            RankedBooks.publication_year,
+            RankedBooks.page_count,
+            RankedBooks.language,
+            GROUP_CONCAT(DISTINCT PhysicalBook.id) AS copies
+        FROM RankedBooks
+        {}JOIN PhysicalBook ON PhysicalBook.book = RankedBooks.id
+        GROUP BY RankedBooks.id
+        ORDER BY MIN(RankedBooks.rank);
+        ",
+        match search_str {
+           Some(_) => "WHERE BookFts MATCH ?",
+           None => ""
+        },
         match only_physical {
             true => "",
             false => "LEFT ",
-        },
-        match search_str {
-           Some(_) => "
-               INNER JOIN BookFts ON BookFts.book_id = Book.id
-               WHERE BookFts MATCH ?
-               ORDER BY bm25(BookFts, 0, 8, 4, 2)",
-           None => ""
         }
     );
     let mut query = sqlx::query_as(&sq);
@@ -463,6 +469,26 @@ pub async fn query_books(
         .into_iter()
         .map(|b| b.to_book())
         .collect());
+}
+
+pub async fn search_suggestions(
+    pool: &SqlitePool,
+    search_str: &str,
+) -> Result<Vec<types::BookSearchSuggestion>, sqlx::Error> {
+    let suggestions: Vec<types::BookSearchSuggestion> = sqlx::query_as("
+        SELECT 
+            Book.uuid,
+            Book.isbn,
+            Book.title,
+            Book.authors,
+            Book.genres
+        FROM Book
+        INNER JOIN BookFts ON BookFts.book_id = Book.id
+        WHERE BookFts MATCH ?
+        ORDER BY bm25(BookFts, 0, 8, 4, 2)
+        LIMIT 15").bind(search_str).fetch_all(pool).await?;
+
+    Ok(suggestions)
 }
 
 pub async fn get_user_reservations(

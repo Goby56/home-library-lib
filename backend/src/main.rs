@@ -81,6 +81,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(Data::new(AppState { db: pool.clone() }))
             .service(routes::get_book)
             .service(routes::get_books)
+            .service(routes::get_search_suggestions)
             .service(routes::register_book)
             .service(routes::add_physical_book)
             .service(routes::edit_physical_book)

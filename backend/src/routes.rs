@@ -202,6 +202,25 @@ pub async fn get_books(state: Data<AppState>, query: web::Query<BookSearchQueryP
 }
 
 #[derive(Serialize)]
+#[serde(transparent)]
+struct SearchSuggestions {
+    suggestions: Vec<types::BookSearchSuggestion>
+}
+
+#[get("/get_search_suggestions")]
+pub async fn get_search_suggestions(state: Data<AppState>, query: web::Query<BookSearchQueryParams>) -> Result<impl Responder> {
+    let Some(search_str) = query.search_str.as_deref() else {
+        return Err(actix_web::error::ErrorBadRequest("Query parameter 'search_str' is required"));
+    };
+
+    match database::search_suggestions(&state.db, search_str).await {
+        Ok(suggestions) => Ok(web::Json(SearchSuggestions { suggestions })),
+        _ => Ok(web::Json(SearchSuggestions { suggestions: vec![] })),
+    }
+
+}
+
+#[derive(Serialize)]
 struct SingleBookResponse {
     book: types::Book,
     copies: Vec<types::PhysicalBook>

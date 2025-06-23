@@ -8,11 +8,9 @@
   import { MediaQuery } from 'svelte/reactivity';
   import Input from '$lib/components/ui/input/input.svelte';
   import DarkModeToggle from '$lib/components/DarkModeToggle.svelte';
-  import { parseAbsoluteToLocal } from '@internationalized/date';
   import * as Drawer from "$lib/components/ui/drawer/index.js";
   import { reservationDuration } from "$lib/utils";
-  import placeHolderImage from "$lib/assets/placeholder_image.webp";
-    import { mode } from 'mode-watcher';
+  import { mode } from 'mode-watcher';
 
  
 	let { data }: PageProps = $props();

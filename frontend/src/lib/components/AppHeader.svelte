@@ -11,6 +11,8 @@
   import { mode } from "mode-watcher";
 
   let { user } = $props();
+
+  let searchInput = $state("");
   const isDesktop = new MediaQuery("(min-width: 768px)");
 </script>
 
@@ -26,7 +28,7 @@
       </a>
     </div>
     <div class="flex justify-center w-full md:w-1/2">
-      <Searchbar/>
+      <Searchbar bind:value={searchInput}/>
     </div>
     <div class="flex justify-end items-center h-8 gap-2 md:pr-2">
       {#if isDesktop.current}

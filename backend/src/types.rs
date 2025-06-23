@@ -78,3 +78,12 @@ pub struct PhysicalBook {
     pub shelf: Shelf,
     pub reservations: Vec<Reservation>,
 }
+
+#[derive(sqlx::FromRow, serde::Serialize)]
+pub struct BookSearchSuggestion {
+    pub uuid: Uuid,
+    pub isbn: Option<String>,
+    pub title: String,
+    pub authors: String,
+    pub genres: Option<String>,
+}
