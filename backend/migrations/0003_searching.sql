@@ -1,5 +1,13 @@
-CREATE VIRTUAL TABLE "BookFts" USING fts5 (book_id, title, authors, genres);
+-- Full-text search table
+CREATE VIRTUAL TABLE "BookFts" USING fts5 (
+    book_id UNINDEXED, 
+    title, 
+    authors, 
+    genres, 
+    tokenize = "unicode61 remove_diacritics 0"
+);
 
+-- Automatic updates of fts table
 CREATE TRIGGER "InsertBookTrigger" 
     AFTER INSERT ON "Book"
 BEGIN
@@ -24,3 +32,9 @@ BEGIN
     DELETE FROM "BookFts"
     WHERE book_id = NEW.id;
 END;
+
+-- Direct access to fts table using aux/vocab table
+CREATE VIRTUAL TABLE "BookFtsVocab" USING fts5vocab("BookFts", "row");
+
+-- Spellfix1 table
+CREATE VIRTUAL TABLE "BookSpellfix" USING spellfix1;

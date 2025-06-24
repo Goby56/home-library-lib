@@ -2,6 +2,7 @@ mod database;
 mod routes;
 mod types;
 mod auth;
+mod search;
 
 use std::{env, vec};
 use std::str::FromStr;
