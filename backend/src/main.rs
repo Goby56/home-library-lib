@@ -21,9 +21,9 @@ pub struct AppState {
 }
 
 async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
-    let db_options = SqliteConnectOptions::from_str("sqlite://backend/db/db.sqlite")?
+    let db_options = SqliteConnectOptions::from_str("sqlite://db/db.sqlite")?
         .create_if_missing(true)
-        .extension("backend/spellfix1");
+        .extension("./spellfix1");
 
     let pool = SqlitePool::connect_with(db_options).await?;
 
@@ -94,7 +94,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::get_user_reservations)
             .service(routes::reserve_physical_book)
             .service(routes::remove_reservation)
-            .service(actix_files::Files::new("/book_cover", "./backend/db/images/book_covers/"))
+            .service(actix_files::Files::new("/book_cover", "./db/images/book_covers/"))
     })
     .bind(("0.0.0.0", 8080))?
     .run()

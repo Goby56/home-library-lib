@@ -1,2 +1,3 @@
-db/db.sqlite
-db/images/book_covers/*
+/db/db.sqlite
+/db/images/book_covers/*
+/target
