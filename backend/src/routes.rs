@@ -7,7 +7,7 @@ use actix_multipart::form::{json::Json as MpJson, tempfile::TempFile, MultipartF
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 use uuid::Uuid;
-use crate::{auth::{self, Session}, database, types, AppState};
+use crate::{auth::{self, Session}, database::crud, types, AppState};
 
 #[derive(Debug, MultipartForm)]
 struct ShelveForm {
@@ -29,7 +29,7 @@ pub struct BookForm {
 
 #[post("/register_book")]
 pub async fn register_book(state: Data<AppState>, MultipartForm(form): MultipartForm<ShelveForm>) -> actix_web::Result<String> {
-    let uuid = match database::insert_book(&state.db, form.json.clone()).await {
+    let uuid = match crud::insert_book(&state.db, form.json.clone()).await {
         Ok(uuid) => uuid.to_string(),
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
@@ -38,7 +38,7 @@ pub async fn register_book(state: Data<AppState>, MultipartForm(form): Multipart
         let reader = BufReader::new(file.file.reopen()?);
         let img = ImageReader::new(reader).with_guessed_format()?.decode()
             .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-        img.save(format!("./backend/db/images/book_covers/{}.webp", uuid.clone()))
+        img.save(format!("./db/images/book_covers/{}.webp", uuid.clone()))
             .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
         return Ok(format!("Shelved {}. Access its cover at '/book_cover/{}.webp'", form.json.title, uuid));
     }
@@ -54,13 +54,13 @@ struct ShelfInfo {
 
 #[post("/add_physical_book")]
 pub async fn add_physical_book(state: Data<AppState>, shelf_data: web::Json<ShelfInfo>) -> actix_web::Result<String> {
-    let shelf = database::get_shelf(&state.db, None, Some(&shelf_data.name)).await
+    let shelf = crud::get_shelf(&state.db, None, Some(&shelf_data.name)).await
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-    let book = database::get_book(&state.db, None, Some(shelf_data.uuid)).await
+    let book = crud::get_book(&state.db, None, Some(shelf_data.uuid)).await
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
     return match (book, shelf) {
         (book, Some(shelf)) => {
-            database::create_physical_book(&state.db, book.id, shelf.id).await
+            crud::create_physical_book(&state.db, book.id, shelf.id).await
                 .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
             Ok(format!("Added a physical copy of {} to shelf {}", book.title, shelf.name))
         },
@@ -79,12 +79,12 @@ struct EditPhysicalBookData {
 pub async fn edit_physical_book(state: Data<AppState>, edit_data: web::Json<EditPhysicalBookData>) -> Result<impl Responder> {
     // Can remove phyiscal book if new shelf name is left blank
     if edit_data.new_shelf_name == "" {
-        match database::remove_physical_book(&state.db, edit_data.copy_id).await {
+        match crud::remove_physical_book(&state.db, edit_data.copy_id).await {
             Ok(_) => Ok(format!("Removed physical copy {}", edit_data.copy_id)),
             Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
         }
     } else {
-        match database::move_physical_book(&state.db, edit_data.copy_id, &edit_data.new_shelf_name).await {
+        match crud::move_physical_book(&state.db, edit_data.copy_id, &edit_data.new_shelf_name).await {
             Ok(Some(shelf_id)) => Ok(format!("Moved physical copy {} to shelf {} ({})", edit_data.copy_id, edit_data.new_shelf_name, shelf_id)),
             Ok(None) => Err(actix_web::error::ErrorInternalServerError(format!("Could not find shelf {}", edit_data.new_shelf_name))),
             Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
@@ -109,7 +109,7 @@ pub async fn reserve_physical_book(state: Data<AppState>, req: HttpRequest, rese
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };  
 
-    match database::reserve_physical_book(&state.db, 
+    match crud::reserve_physical_book(&state.db, 
         user_id, reservation_data.copy_id, reservation_data.start, reservation_data.end).await {
         Ok(true) => Ok(format!("Reserved physical copy {} to user {}", reservation_data.copy_id, user_id)),
         Ok(false) => Err(actix_web::error::ErrorConflict("Reservation overlaps with another reservation")),
@@ -125,7 +125,7 @@ pub async fn remove_reservation(state: Data<AppState>, req: HttpRequest, path: w
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
 
-    let reservation = match database::get_reservation(&state.db, path.into_inner().0).await {
+    let reservation = match crud::get_reservation(&state.db, path.into_inner().0).await {
         Ok(Some(reservation)) => reservation,
         Ok(None) => return Err(actix_web::error::ErrorNotFound("Could not find the reservation to remove")),
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
@@ -135,7 +135,7 @@ pub async fn remove_reservation(state: Data<AppState>, req: HttpRequest, path: w
         return Err(actix_web::error::ErrorForbidden("User does not own reservation"))
     }
 
-    database::remove_reservation(&state.db, reservation.id).await
+    crud::remove_reservation(&state.db, reservation.id).await
         .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
     Ok(format!("User {user_id} removed reservation {}", reservation.id))
 }
@@ -143,7 +143,7 @@ pub async fn remove_reservation(state: Data<AppState>, req: HttpRequest, path: w
 #[derive(Serialize)]
 #[serde(transparent)]
 struct BookReservationsResponse {
-    reservations: Vec<database::BookReservation>
+    reservations: Vec<crud::BookReservation>
 }
 
 #[get("/get_user_reservations")]
@@ -154,7 +154,7 @@ pub async fn get_user_reservations(state: Data<AppState>, req: HttpRequest) -> R
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
 
-    let reservations = match database::get_user_reservations(&state.db, user_id).await {
+    let reservations = match crud::get_user_reservations(&state.db, user_id).await {
         Ok(reservations) => reservations,
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
@@ -162,7 +162,7 @@ pub async fn get_user_reservations(state: Data<AppState>, req: HttpRequest) -> R
     let mut book_reservations = vec![];
     
     for rsv in reservations {
-        match database::get_book_reservation(&state.db, rsv).await {
+        match crud::get_book_reservation(&state.db, rsv).await {
             Ok(Some(reservation)) => book_reservations.push(reservation),
             Ok(None) => {},
             Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
@@ -191,7 +191,7 @@ pub async fn get_books(state: Data<AppState>, query: web::Query<BookSearchQueryP
         Some(false) => false,
         _ => true
     };
-    match database::query_books(&state.db, 
+    match crud::query_books(&state.db, 
         query.search_str.as_deref(), 
         query.limit, 
         only_physical
@@ -213,7 +213,7 @@ pub async fn get_search_suggestions(state: Data<AppState>, query: web::Query<Boo
         return Err(actix_web::error::ErrorBadRequest("Query parameter 'search_str' is required"));
     };
 
-    match database::search_suggestions(&state.db, search_str).await {
+    match crud::search_suggestions(&state.db, search_str).await {
         Ok(suggestions) => Ok(web::Json(SearchSuggestions { suggestions })),
         _ => Ok(web::Json(SearchSuggestions { suggestions: vec![] })),
     }
@@ -228,7 +228,7 @@ struct SingleBookResponse {
 
 #[get("/book/{identifier}")]
 pub async fn get_book(state: Data<AppState>, path: web::Path<(String,)>) -> Result<impl Responder> {
-    match database::get_physical_copies(&state.db, path.into_inner().0).await {
+    match crud::get_physical_copies(&state.db, path.into_inner().0).await {
         Ok((book, copies)) => Ok(web::Json(SingleBookResponse { book, copies })),
         Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string())),
     }
@@ -236,7 +236,7 @@ pub async fn get_book(state: Data<AppState>, path: web::Path<(String,)>) -> Resu
 
 #[get("/get_shelves")]
 pub async fn get_shelves(state: Data<AppState>) -> Result<impl Responder> {
-    match database::get_shelves(&state.db).await {
+    match crud::get_shelves(&state.db).await {
         Ok(shelves) => Ok(shelves.iter().map(|s| s.name.as_str()).collect::<Vec<_>>().join(",")),
         _ => Err(actix_web::error::ErrorInternalServerError("Could not retrieve bookshelves"))
     }
@@ -260,7 +260,7 @@ pub async fn get_user(state: Data<AppState>, req: HttpRequest) -> Result<impl Re
     let Some(session) = extensions.get::<Session>() else {
         return Err(actix_web::error::ErrorUnauthorized("Could not verify session token"));
     };
-    match database::get_user(&state.db, session.user).await {
+    match crud::get_user(&state.db, session.user).await {
         Ok(user) => Ok(web::Json(user)),
         Err(err) => Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     }
@@ -281,7 +281,7 @@ pub async fn logout_user(state: Data<AppState>, req: HttpRequest) -> Result<impl
 
 #[post("/login_user")]
 pub async fn login_user(state: Data<AppState>, login_data: web::Json<UserCredentials>) -> Result<impl Responder> {
-    let user_id = match database::login_user(&state.db, &login_data.username, &login_data.password).await {
+    let user_id = match crud::login_user(&state.db, &login_data.username, &login_data.password).await {
         Ok(Some(user_id)) => user_id,
         _ => return Err(actix_web::error::ErrorUnauthorized("User doesn't exist or incorrect password"))
     };
@@ -294,7 +294,7 @@ pub async fn login_user(state: Data<AppState>, login_data: web::Json<UserCredent
 
 #[post("/register_user")]
 pub async fn register_user(state: Data<AppState>, register_data: web::Json<UserCredentials>) -> Result<impl Responder> {
-    let user_id = match database::register_user(&state.db, &register_data.username, &register_data.password).await {
+    let user_id = match crud::register_user(&state.db, &register_data.username, &register_data.password).await {
         Ok(Some(user_id)) => user_id,
         Ok(None) => return Err(actix_web::error::ErrorConflict("Username already exists")),
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))

@@ -460,30 +460,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "backend"
-version = "0.1.0"
-dependencies = [
- "actix-cors",
- "actix-files",
- "actix-multipart",
- "actix-session",
- "actix-web",
- "argon2",
- "dotenv",
- "hex",
- "image",
- "log",
- "rand 0.9.1",
- "serde",
- "serde_json",
- "sha2",
- "sorted-vec",
- "sqlx",
- "time",
- "uuid",
-]
-
-[[package]]
 name = "backtrace"
 version = "0.3.74"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1326,6 +1302,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b5f8eb2ad728638ea2c7d47a21db23b7b58a72ed6a38256b8a1849f15fbbdf7"
 dependencies = [
  "hmac",
+]
+
+[[package]]
+name = "hll"
+version = "0.1.0"
+dependencies = [
+ "actix-cors",
+ "actix-files",
+ "actix-multipart",
+ "actix-session",
+ "actix-web",
+ "argon2",
+ "dotenv",
+ "hex",
+ "image",
+ "log",
+ "rand 0.9.1",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sorted-vec",
+ "sqlx",
+ "time",
+ "uuid",
 ]
 
 [[package]]

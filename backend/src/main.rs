@@ -1,12 +1,6 @@
-mod database;
-mod routes;
-mod types;
-mod auth;
-mod search;
+use hll::{auth, database, routes, AppState};
 
 use std::{env, vec};
-use std::str::FromStr;
-
 use actix_cors::Cors;
 use actix_web::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
@@ -14,25 +8,6 @@ use actix_web::{http, HttpMessage};
 use actix_web::middleware::{self, Logger};
 use actix_web::{web::Data, App, HttpServer};
 use actix_files;
-use sqlx::{sqlite::SqliteConnectOptions, Pool, Sqlite, SqlitePool};
-
-pub struct AppState {
-    db: Pool<Sqlite>,
-}
-
-async fn init_database() -> Result<Pool<Sqlite>, sqlx::Error> {
-    let db_options = SqliteConnectOptions::from_str("sqlite://db/db.sqlite")?
-        .create_if_missing(true)
-        .extension("./spellfix1");
-
-    let pool = SqlitePool::connect_with(db_options).await?;
-
-    sqlx::query("PRAGMA foreign_keys = ON;").execute(&pool).await?;
-
-    sqlx::migrate!("./migrations").run(&pool).await?;
-
-    return Ok(pool);
-}
 
 async fn session_middleware(
     state: Data<AppState>,
@@ -62,7 +37,7 @@ async fn session_middleware(
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().unwrap(); // Load .env file
 
-    let pool = init_database()
+    let pool = database::init_database()
         .await
         .expect("Could not initialize database");
 
