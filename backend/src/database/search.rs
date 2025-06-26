@@ -37,6 +37,9 @@ impl SpellfixCandidates {
 }
 
 impl Iterator for SpellfixCandidates {
+
+    type Item = String;
+
     fn next(&mut self) -> Option<Self::Item> {
         if self.exhausted {
             return None;
@@ -44,11 +47,11 @@ impl Iterator for SpellfixCandidates {
         
         let mut top_candidates: Vec<(Candidate, usize)> = vec![];
 
-        let mut composed_str = String::new();
+        let mut words = vec![];
         for (i, word_candidates) in self.candidates.iter().enumerate() {
             let candidate = word_candidates.first().unwrap();
             
-            composed_str.push_str(&candidate.word);
+            words.push(candidate.word.clone());
 
             if word_candidates.len() > 1 {
                 top_candidates.push((candidate.clone(), i));
@@ -62,11 +65,8 @@ impl Iterator for SpellfixCandidates {
             None => { self.exhausted = true; }
         };
 
-        Some(composed_str)
+        Some(words.join(" "))
     }
-
-    type Item = String;
-
 }
 
 pub async fn get_spelling_candidates(pool: &SqlitePool, string: &str, max_candidates: u8) -> Result<Option<SpellfixCandidates>, sqlx::Error> {
@@ -78,7 +78,8 @@ pub async fn get_spelling_candidates(pool: &SqlitePool, string: &str, max_candid
     for word in words {
         let candidates: Vec<Candidate> = sqlx::query_as("
             SELECT word, score FROM BookSpellfix WHERE word MATCH ? AND top=?
-            ").bind(format!("{}*", word)).bind(max_candidates.min(20)).fetch_all(&mut *tx).await?;
+            ").bind(format!("{}", word)).bind(max_candidates.min(20)).fetch_all(&mut *tx).await?;
+        //                     ^ Add * for prefix search
         if candidates.len() > 0 {
             corrected_words.push(candidates);
         }

@@ -21,12 +21,12 @@ export const load: PageServerLoad = async ({ url }) => {
     form.data.isbn = isbn
     if (book != null) {
         form.data.title = book.title
-        form.data.authors = (book.authors as string[]).join("\n") // TODO authors may be undefined?
-        let date = parseDate(book.publishedDate ?? "")
-        if (date != null) {
-            form.data.publication_year = date.getFullYear()
-        } else {
+        form.data.authors = (book.authorsas ?? []).join("\n") // TODO authors may be undefined?
+        const date = parseDate(book.publishedDate ?? "")
+        if (date == null) {
             form.errors.publication_year = [`Could not parse year from ${book.publishedDate}`]
+        } else {
+            form.data.publication_year = date.getFullYear();
         }
         form.data.page_count = book.pageCount
         form.data.language = book.language

@@ -74,14 +74,9 @@ async fn correct_spelling(pool: &SqlitePool) -> Result<(), sqlx::Error> {
                 println!("Not enough good results");
                 continue;
             };
-            print!("Spellfix => ");
+            println!("Spellfix =>");
             for (i, c) in candidates.enumerate() {
-                if i == 0 {
-                    println!("{c}");
-                } else {
-                    println!(
-                        "       {c}")
-                }
+                println!("{}. {c}", i+1);
             }
         }
     }

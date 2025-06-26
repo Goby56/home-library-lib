@@ -7,7 +7,7 @@ use actix_multipart::form::{json::Json as MpJson, tempfile::TempFile, MultipartF
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 use uuid::Uuid;
-use crate::{auth::{self, Session}, database::crud, types, AppState};
+use crate::{auth::{self, Session}, database::{crud, search}, types, AppState};
 
 #[derive(Debug, MultipartForm)]
 struct ShelveForm {
@@ -191,8 +191,20 @@ pub async fn get_books(state: Data<AppState>, query: web::Query<BookSearchQueryP
         Some(false) => false,
         _ => true
     };
+    
+    let mut search_str = None;
+
+    if let Some(search_param) = query.search_str.clone() {
+        let spellfix_candidates = search::get_spelling_candidates(&state.db, &search_param, 1).await
+            .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
+        
+        if let Some(c) = spellfix_candidates {
+            search_str = Some(c.get_top_candidate());
+        };
+    };
+
     match crud::query_books(&state.db, 
-        query.search_str.as_deref(), 
+        search_str.as_deref(), 
         query.limit, 
         only_physical
         ).await {
@@ -209,11 +221,19 @@ struct SearchSuggestions {
 
 #[get("/get_search_suggestions")]
 pub async fn get_search_suggestions(state: Data<AppState>, query: web::Query<BookSearchQueryParams>) -> Result<impl Responder> {
-    let Some(search_str) = query.search_str.as_deref() else {
+    let Some(search_param) = query.search_str.as_deref() else {
         return Err(actix_web::error::ErrorBadRequest("Query parameter 'search_str' is required"));
     };
 
-    match crud::search_suggestions(&state.db, search_str).await {
+    let spellfix_candidates = search::get_spelling_candidates(&state.db, search_param, 1).await
+        .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
+
+    let search_str = match spellfix_candidates {
+        Some(c) => c.get_top_candidate(),
+        None => search_param.to_string()
+    };
+
+    match crud::search_suggestions(&state.db, &search_str).await {
         Ok(suggestions) => Ok(web::Json(SearchSuggestions { suggestions })),
         _ => Ok(web::Json(SearchSuggestions { suggestions: vec![] })),
     }
