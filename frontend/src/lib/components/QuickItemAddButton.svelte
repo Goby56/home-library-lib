@@ -8,12 +8,14 @@
   import ScanBarcode from "@lucide/svelte/icons/scan-barcode";
   import PencilLine from "@lucide/svelte/icons/pencil-line";
   import Hash from "@lucide/svelte/icons/hash";
+  import IsbnDialog from "./IsbnDialog.svelte";
 
   let isbnDialogOpen = $state(false)
-  let isbn = $state("")
 </script>
 
-<div class="fixed right-10 bottom-10 m-5 bg-primary hover:bg-primary/90 rounded-3xl">
+<IsbnDialog bind:isbnDialogOpen/>
+
+<div class="fixed md:hidden z-50 right-10 bottom-10 m-5 bg-primary rounded-3xl">
   <DropdownMenu.Root>
     <DropdownMenu.Trigger class="flex p-3">
       <Plus class="text-background"/>
@@ -38,19 +40,3 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 </div>
-
-<Dialog.Root bind:open={isbnDialogOpen}>
-  <Dialog.Trigger></Dialog.Trigger>
-  <Dialog.Content class="sm:max-w-[425px]">
-    <Dialog.Header>
-      <Dialog.Title>Bok från ISBN</Dialog.Title>
-      <Dialog.Description>
-        Mata in ISBN som finns på baksidan av din bok
-      </Dialog.Description>
-    </Dialog.Header>
-    <div class="flex">
-      <Input type="search" id="isbn" bind:value={isbn} placeholder="ISBN" class="mr-3" />
-      <Button href="/add?isbn={isbn}">Sök</Button>
-    </div>
-  </Dialog.Content>
-</Dialog.Root>

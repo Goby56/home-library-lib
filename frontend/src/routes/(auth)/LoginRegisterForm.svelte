@@ -51,6 +51,11 @@
           <Form.Control>
             {#snippet children({ props })}
               <Form.Label>Lösenord</Form.Label>
+              <!--
+              <a href="/help#Glömt lösenord" class="ml-auto inline-block text-sm underline">
+                Glömt lösenord?
+              </a>
+              -->
               <Input {...props} type="password" bind:value={$formData.password} />
             {/snippet}
           </Form.Control>

@@ -2,13 +2,13 @@
   import UserIcon from "@lucide/svelte/icons/user";
   import CheckIcon from "@lucide/svelte/icons/check";
   import HouseIcon from "@lucide/svelte/icons/house";
-  import Searchbar from "./Searchbar.svelte";
-  import Button from "./ui/button/button.svelte";
+  import Searchbar from "$lib/components/Searchbar.svelte";
   import { Separator } from "$lib/components/ui/separator/index.js";
   import AppLogo from "$lib/assets/rose_icon.svelte";
   import DarkModeToggle from "$lib/components/DarkModeToggle.svelte";
   import { MediaQuery } from "svelte/reactivity";
   import { mode } from "mode-watcher";
+    import Button from "$lib/components/ui/button/button.svelte";
 
   let { user } = $props();
 

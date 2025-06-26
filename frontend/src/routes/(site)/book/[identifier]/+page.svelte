@@ -176,7 +176,7 @@
 <Drawer.Root>
   {#if data.copies.length != 0}
     <Drawer.Trigger class="flex justify-center">
-      <div class="md:hidden flex justify-center w-full px-5 fixed bottom-5">
+      <div class="md:hidden flex bg-background justify-center w-full pb-3 px-5 pt-2 rounded-t-md fixed bottom-0">
         <Button class="w-full text-lg font-semibold">
           Reservera
         </Button>
