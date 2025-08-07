@@ -162,7 +162,7 @@
 {/snippet}
 
 <div class="md:flex flex-col justify-start items-center mb-20 hidden">
-  <ReservationCalendar bind:value={reservationDates} user={data.user} numberOfMonths={4} {reservations}/>
+  <ReservationCalendar bind:value={reservationDates} user={data.user} numberOfMonths={3} {reservations}/>
   <div class="flex justify-center items-center gap-3">
     <div class="flex gap-2 items-center">
       <p class="text-center text-muted-foreground text-sm">Välj en bokhylla:</p>
