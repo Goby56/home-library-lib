@@ -1,5 +1,6 @@
 <script lang="ts">
   import RangeCalendar from "$lib/components/custom-range-calendar/wrapper/range-calendar.svelte";
+  import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { CalendarDate, parseAbsoluteToLocal, parseDate, parseDateTime, parseZonedDateTime, type DateValue } from "@internationalized/date";
   import type { DateRange } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
@@ -8,6 +9,7 @@
   import * as Dialog from "$lib/components/ui/dialog/index.js";
     import { reservationDuration } from "$lib/utils";
     import Button from "./ui/button/button.svelte";
+    import { invalidateAll } from "$app/navigation";
 
   let { user, reservations, numberOfMonths, value = $bindable({start: undefined, end: undefined}), disabled = false }: 
     { user: any, reservations: any[], numberOfMonths: number, value: DateRange, disabled?: boolean } = $props();
@@ -15,6 +17,17 @@
   // const isDesktop = new MediaQuery("(min-width: 768px)");
 
   // let numberOfMonths = $derived(isDesktop.current ? 5 : 2);
+
+  let pendingReservationRemoval = $state(false);
+
+  async function removeReservation(event: any, reservation: any) {
+    event.stopPropagation();
+    pendingReservationRemoval = true;
+    let response = await fetch("/api/remove-reservation?id=" + reservation.id, { method: "POST" });
+    invalidateAll();
+    console.log(await response.text());
+    pendingReservationRemoval = false;
+  }
 
   let ranges: HighlightedRange[] = $derived(reservations.map(rsv => ({
       start: parseAbsoluteToLocal(rsv.start_date),
@@ -58,7 +71,11 @@
     </Dialog.Header>
     {#if focusedReservation.user.username == user.username}
       <p>Denna reservation är gjord av dig</p>
-      <Button variant="destructive">Ta bort reservation</Button>
+      {#if pendingReservationRemoval}
+        <LoaderCircleIcon/>
+      {:else}
+        <Button onclick={(e) => removeReservation(e, focusedReservation)} variant="destructive">Ta bort reservation</Button>
+      {/if}
     {:else}
       <p>Denna reservation är gjord av <u>{focusedReservation.user.username}</u></p>
     {/if}
