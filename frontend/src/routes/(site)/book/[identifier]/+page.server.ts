@@ -5,7 +5,7 @@ import { error } from "@sveltejs/kit";
 import placeHolderImage from "$lib/assets/placeholder_image.webp";
 import { BACKEND_URL } from '$lib/utils-server';
 
-export let load: PageServerLoad = async ({ fetch, params }) => {
+export let load: PageServerLoad = async ({ fetch, params, url }) => {
     let bookResponse = await fetch(BACKEND_URL + "/book/" + params.identifier);
 
     if (!bookResponse.ok) {
@@ -27,6 +27,8 @@ export let load: PageServerLoad = async ({ fetch, params }) => {
         book: book.book,
         copies: book.copies,
         cover: coverImage,
-        shelves: shelvesString === "" ? [] : shelvesString.split(",")
+        shelves: shelvesString === "" ? [] : shelvesString.split(","),
+        copy: url.searchParams.get("copy")
+
     }
 };

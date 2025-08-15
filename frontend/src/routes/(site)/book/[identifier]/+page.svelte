@@ -14,6 +14,7 @@
   import PhysicalBookSelector from './PhysicalBookSelector.svelte';
   import ReservationCalendar from '$lib/components/ReservationCalendar.svelte';
   import { invalidateAll } from '$app/navigation';
+    import { onMount } from 'svelte';
  
 	let { data }: PageProps = $props();
 
@@ -40,6 +41,16 @@
 
   let selectedCopy: any = $state(undefined);
   let selectedCopyID = $derived(selectedCopy?.id);
+  
+  onMount(() => {
+    if (data.copy) {
+      (data.copies as any[]).forEach(c => {
+        if (c.id == data.copy) {
+          selectedCopy = c;
+        }
+      });
+    }
+  })
 
   let reservations = $derived(selectedCopy?.reservations ?? []);
 
