@@ -586,3 +586,22 @@ pub async fn register_user(
     }
     Ok(None)
 }
+
+pub async fn change_username(
+    pool: &SqlitePool, 
+    user_id: u32, 
+    new_username: &str
+    ) -> Result<String, sqlx::Error> {
+    let old_username: String = sqlx::query_scalar("
+        WITH target AS (
+            SELECT id, username AS old_username
+            FROM User
+            WHERE id = ?
+        )
+        UPDATE User
+        SET username = ?
+        WHERE id = (SELECT id FROM target)
+        RETURNING (SELECT old_username FROM target) AS old_username;
+        ").bind(user_id).bind(new_username).fetch_one(pool).await?;
+    Ok(old_username)
+}

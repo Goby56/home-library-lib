@@ -47,6 +47,29 @@
     pendingReservationRemoval = false;
   }
 
+  let pendingUsernameChange = $state(false);
+  let usernameTaken = $state(false);
+
+  $effect(() => {
+    if (usernameInput)  {
+      usernameTaken = false;
+    }
+  })
+
+  async function changeUsername(newUsername: string) {
+    pendingUsernameChange = true;
+    let response = await fetch("/api/change-username?new_username=" + newUsername, { method: "POST" });
+    if (!response.ok) {
+      if (response.status == 409) {
+        usernameTaken = true; 
+      }
+      console.log(await response.text());
+    } else {
+      invalidateAll();
+    }
+    pendingReservationRemoval = false;
+  }
+
 </script>
 
 <div class="flex gap-5">
@@ -125,16 +148,19 @@
   </div>
   <div class="flex flex-wrap md:flex-nowrap gap-2 items-center">
     <p class="text-muted-foreground">Användarnamn: </p>
-    <Input type="search" bind:value={usernameInput} class="w-full rounded-md"/>
-    {#if usernameInput != data.user.username}
-      <Button variant="default">Byt användarnamn</Button>
+    <Input type="search" bind:value={usernameInput} class="w-full rounded-md {usernameTaken ? 'border-destructive' : ''}"/>
+    {#if usernameInput != data.user.username && usernameInput}
+      {#if usernameTaken}
+        <Button disabled variant="default">Användarnamnet är taget</Button>
+      {:else}
+        <Button onclick={() => changeUsername(usernameInput)} variant="default">Byt användarnamn</Button>
+      {/if}
     {:else} 
-      <!-- TODO: Give feedback of available names as the user types -->
       <Button disabled variant="default">Byt användarnamn</Button>
     {/if}
   </div>
   <div class="flex gap-3">
-    <Button href="/change-password" variant="secondary">Byt lösenord</Button>
+    <Button href="/help#change-password" variant="secondary">Byt lösenord</Button>
     <Button variant="destructive">Ta bort profil</Button>
   </div>
 </div>

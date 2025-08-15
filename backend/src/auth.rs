@@ -1,4 +1,4 @@
-use actix_web::cookie::Cookie;
+use actix_web::{cookie::Cookie, HttpMessage, HttpRequest, Responder};
 use rand::{rngs::OsRng, TryRngCore};
 use sha2::{Digest, Sha256};
 use sqlx::SqlitePool;

@@ -325,3 +325,20 @@ pub async fn register_user(state: Data<AppState>, register_data: web::Json<UserC
         _ => Err(actix_web::error::ErrorInternalServerError("Could not create session"))
     }
 }
+
+#[derive(Deserialize)]
+struct NewUsernameQueryParam {
+    new_username: String
+}
+
+#[post("/change_username")]
+pub async fn change_username(state: Data<AppState>, req: HttpRequest, query: web::Query<NewUsernameQueryParam>) -> Result<impl Responder> {
+    let extensions = req.extensions();
+    let Some(session) = extensions.get::<Session>() else {
+        return Err(actix_web::error::ErrorUnauthorized("Could not verify session token"));
+    };
+    match crud::change_username(&state.db, session.user, &query.new_username).await {
+        Ok(old) => Ok(format!("Changed username from {old} to {}", query.new_username)),
+        _ => Err(actix_web::error::ErrorConflict("Username may already exist"))
+    }
+}

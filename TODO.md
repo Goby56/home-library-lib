@@ -1,6 +1,6 @@
 - Show recently viewed book as search suggestions if no search term is provided
 - Implement trigram fuzzy search
-
-- Change username
+- Clean up error handling (endless match statements)
+- Switch from get_user_from_cookie to extensions.get<Session>()
 - Change personal color
 - Refreshing issues when for reservations (UI doesnt update after add and remove)
