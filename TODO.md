@@ -4,6 +4,4 @@
 
 - Change username
 - Change personal color
-- Zero page count shows as '-'
-- Cannot reserve book in the past
 - Refreshing issues when for reservations (UI doesnt update after add and remove)
