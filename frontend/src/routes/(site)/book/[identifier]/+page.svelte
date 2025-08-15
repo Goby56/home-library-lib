@@ -13,8 +13,9 @@
   import ShelfSelector from "$lib/components/ShelfSelector.svelte";
   import PhysicalBookSelector from './PhysicalBookSelector.svelte';
   import ReservationCalendar from '$lib/components/ReservationCalendar.svelte';
-  import { invalidateAll } from '$app/navigation';
+  import { invalidateAll, replaceState } from '$app/navigation';
     import { onMount } from 'svelte';
+    import { page } from '$app/state';
  
 	let { data }: PageProps = $props();
 
@@ -39,20 +40,27 @@
     return null;
   })
 
-  let selectedCopy: any = $state(undefined);
-  let selectedCopyID = $derived(selectedCopy?.id);
-  
-  onMount(() => {
-    if (data.copy) {
-      (data.copies as any[]).forEach(c => {
-        if (c.id == data.copy) {
-          selectedCopy = c;
-        }
-      });
+  let selectedCopyID: any = $state(undefined);
+
+  let selectedCopy = $derived((data.copies as any[]).find(c => c.id == selectedCopyID))
+
+  let reservations = $derived(selectedCopy?.reservations ?? [])
+
+  $effect(() => {
+    if (selectedCopyID) {
+      // Selecting a copy changes the URL
+      const url = new URL(window.location.href);
+      url.searchParams.set("copy", selectedCopyID);
+      replaceState(url, page.state)
     }
   })
-
-  let reservations = $derived(selectedCopy?.reservations ?? []);
+  
+  onMount(() => {
+    // Select the copy provided as a search param (?copy=id)
+    if (data.copy) {
+      selectedCopyID = data.copy;
+    }
+  })
 
   let pendingReservation = $state(false);
 
@@ -164,7 +172,7 @@
       <LoaderCircleIcon class="animate-spin"/>
     </Button>
   {:else}
-    {#if reservationDuration && selectedCopy}
+    {#if reservationDuration && selectedCopyID}
       <Button onclick={reserveCopy}>Reservera</Button>
     {:else}
       <Button disabled>Reservera</Button>
@@ -177,7 +185,7 @@
   <div class="flex justify-center items-center gap-3">
     <div class="flex gap-2 items-center">
       <p class="text-center text-muted-foreground text-sm">Välj en bokhylla:</p>
-      <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
+      <PhysicalBookSelector bind:selectedCopyID={selectedCopyID} physicalCopies={data.copies}/>
     </div>
     <ArrowRightIcon class="size-5 text-muted-foreground"/>
     {@render reservationButton()}
@@ -202,15 +210,15 @@
       <ReservationCalendar bind:value={reservationDates} user={data.user} numberOfMonths={1} {reservations}/>
       <div class="flex flex-col gap-2 items-center">
         
-        <PhysicalBookSelector bind:selectedCopy={selectedCopy} physicalCopies={data.copies}/>
+        <PhysicalBookSelector bind:selectedCopyID={selectedCopyID} physicalCopies={data.copies}/>
         <div class="flex flex-col justify-start items-center h-12 gap-1">
-          {#if reservationDuration && selectedCopy}
+          {#if reservationDuration && selectedCopyID}
             <p class="text-center text-muted-foreground text-sm px-2">Du är påväg att reservera <b>{data.book.title}</b> på hyllan {selectedCopy.shelf.name} i <u>{reservationDuration} dagar</u></p>
           {:else}
             {#if !reservationDuration}
               <p class="text-center text-muted-foreground text-sm px-2">Ange två datum som du vill reservera boken mellan</p>
             {/if}
-            {#if !selectedCopy}
+            {#if !selectedCopyID}
               {#if data.copies.length != 0}
                 <p class="text-center text-muted-foreground text-sm px-2">Välj vilken bokhylla du vill låna boken från</p>
               {:else}

@@ -24,9 +24,14 @@
     event.stopPropagation();
     pendingReservationRemoval = true;
     let response = await fetch("/api/remove-reservation?id=" + reservation.id, { method: "POST" });
-    invalidateAll();
-    console.log(await response.text());
+    if (response.ok) {
+      popupOpen = false;
+      invalidateAll();
+    } else {
+      console.log(await response.text());
+    }
     pendingReservationRemoval = false;
+    
   }
 
   let ranges: HighlightedRange[] = $derived(reservations.map(rsv => ({
