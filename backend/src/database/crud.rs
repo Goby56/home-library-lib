@@ -173,6 +173,10 @@ pub async fn reserve_physical_book(
     let Some(physical_copy) = get_physical_book(pool, copy_id).await? else {
         return Ok(false);
     };
+    
+    if start_date < OffsetDateTime::now_utc() {
+        return Ok(false);
+    }
 
     for reservation in physical_copy.reservations {
         if reservation.intersects(start_date, end_date) {

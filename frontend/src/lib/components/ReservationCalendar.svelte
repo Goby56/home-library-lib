@@ -1,7 +1,7 @@
 <script lang="ts">
   import RangeCalendar from "$lib/components/custom-range-calendar/wrapper/range-calendar.svelte";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
-  import { CalendarDate, parseAbsoluteToLocal, parseDate, parseDateTime, parseZonedDateTime, type DateValue } from "@internationalized/date";
+  import { CalendarDate, now, parseAbsoluteToLocal, parseDate, parseDateTime, parseZonedDateTime, today, type DateValue } from "@internationalized/date";
   import type { DateRange } from "bits-ui";
   import { MediaQuery } from "svelte/reactivity";
   import type { HighlightedRange } from "$lib/components/custom-range-calendar/base/types";
@@ -59,8 +59,12 @@
     popupOpen = true;
   }
 
+  function isDateDisabled(date: DateValue) {
+    return today("UTC").compare(date) > 0;
+  }
+
 </script>
-<RangeCalendar bind:value class="rounded-lg" {ranges} learnMore={onClickHightlight} {disabled} fixedWeeks={false} {numberOfMonths}/>
+<RangeCalendar bind:value class="rounded-lg" {isDateDisabled} {ranges} learnMore={onClickHightlight} {disabled} fixedWeeks={false} {numberOfMonths}/>
 
 <Dialog.Root bind:open={popupOpen}>
   <Dialog.Content>
