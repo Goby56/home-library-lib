@@ -327,18 +327,30 @@ pub async fn register_user(state: Data<AppState>, register_data: web::Json<UserC
 }
 
 #[derive(Deserialize)]
-struct NewUsernameQueryParam {
-    new_username: String
+struct NewStringQueryParam {
+    new: String
 }
 
 #[post("/change_username")]
-pub async fn change_username(state: Data<AppState>, req: HttpRequest, query: web::Query<NewUsernameQueryParam>) -> Result<impl Responder> {
+pub async fn change_username(state: Data<AppState>, req: HttpRequest, query: web::Query<NewStringQueryParam>) -> Result<impl Responder> {
     let extensions = req.extensions();
     let Some(session) = extensions.get::<Session>() else {
         return Err(actix_web::error::ErrorUnauthorized("Could not verify session token"));
     };
-    match crud::change_username(&state.db, session.user, &query.new_username).await {
-        Ok(old) => Ok(format!("Changed username from {old} to {}", query.new_username)),
+    match crud::change_username(&state.db, session.user, &query.new).await {
+        Ok(old) => Ok(format!("Changed username from {old} to {}", query.new)),
         _ => Err(actix_web::error::ErrorConflict("Username may already exist"))
+    }
+}
+
+#[post("/change_personal_color")]
+pub async fn change_personal_color(state: Data<AppState>, req: HttpRequest, query: web::Query<NewStringQueryParam>) -> Result<impl Responder> {
+    let extensions = req.extensions();
+    let Some(session) = extensions.get::<Session>() else {
+        return Err(actix_web::error::ErrorUnauthorized("Could not verify session token"));
+    };
+    match crud::change_personal_color(&state.db, session.user, &query.new).await {
+        Ok(old) => Ok(format!("Changed personal color from {old} to {}", query.new)),
+        _ => Err(actix_web::error::ErrorConflict("Color already taken"))
     }
 }

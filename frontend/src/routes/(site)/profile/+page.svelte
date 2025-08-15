@@ -70,6 +70,16 @@
     pendingReservationRemoval = false;
   }
 
+  async function changeColor(newColor: string) {
+    // Remove # in the beginning as requests ignore everything after raw # in url
+    let response = await fetch("/api/change-personal-color?new_color=" + newColor.slice(1), { method: "POST" });
+    if (response.ok) {
+      hasChangedColor = false; 
+      invalidateAll();
+    } else {
+      console.log(response)
+    }
+  }
 </script>
 
 <div class="flex gap-5">
@@ -77,7 +87,7 @@
     <input type="color" class="opacity-0 aspect-square size-full" bind:value={selectedHex}>
     <EditIcon class="{mode.current == "light" ? "text-background" : "text-foreground"} group-hover:opacity-100 opacity-0 pointer-events-none size-12 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"/>
     {#if hasChangedColor}
-      <Button class="text-muted-foreground p-0 pt-1 h-fit" variant="link">Byt till vald färg</Button>
+      <Button onclick={() => changeColor(selectedHex)} class="text-muted-foreground p-0 pt-1 h-fit" variant="link">Byt till vald färg</Button>
     {/if}
   </div>
   <div class="flex flex-col gap-2 items-start">
@@ -143,7 +153,7 @@
       <input class="absolute size-full opacity-0" type="color" bind:value={selectedHex}>
     </div>
     {#if hasChangedColor}
-      <Button variant="secondary" class="h-full">Byt färg</Button> 
+      <Button onclick={() => changeColor(selectedHex)} variant="secondary" class="h-full">Byt färg</Button> 
     {/if}
   </div>
   <div class="flex flex-wrap md:flex-nowrap gap-2 items-center">

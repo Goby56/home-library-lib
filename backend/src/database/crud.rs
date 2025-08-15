@@ -601,7 +601,26 @@ pub async fn change_username(
         UPDATE User
         SET username = ?
         WHERE id = (SELECT id FROM target)
-        RETURNING (SELECT old_username FROM target) AS old_username;
+        RETURNING (SELECT old_username FROM target);
         ").bind(user_id).bind(new_username).fetch_one(pool).await?;
     Ok(old_username)
+}
+
+pub async fn change_personal_color(
+    pool: &SqlitePool, 
+    user_id: u32, 
+    new_color: &str
+    ) -> Result<String, sqlx::Error> {
+    let old_color: String = sqlx::query_scalar("
+        WITH target AS (
+            SELECT id, personal_color AS old_color
+            FROM User
+            WHERE id = ?
+        )
+        UPDATE User
+        SET personal_color = ?
+        WHERE id = (SELECT id FROM target)
+        RETURNING (SELECT old_color FROM target);
+        ").bind(user_id).bind(new_color).fetch_one(pool).await?;
+    Ok(old_color)
 }

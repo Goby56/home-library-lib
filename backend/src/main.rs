@@ -70,6 +70,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::reserve_physical_book)
             .service(routes::remove_reservation)
             .service(routes::change_username)
+            .service(routes::change_personal_color)
             .service(actix_files::Files::new("/book_cover", "./db/images/book_covers/"))
     })
     .bind(("0.0.0.0", 8080))?
