@@ -2,14 +2,14 @@ services:
   backend:
     build: ./backend
     environment:
-      ALLOWED_ORIGIN: "${ORIGIN}"
+      ALLOWED_ORIGIN: "${SITE_DOMAIN}"
     volumes:
       - ${DATABASE_PATH}:/usr/src/hll/db
 
   frontend:
     build: ./frontend
     environment:
-      ORIGIN: "${ORIGIN}" # required by adapter-node 
+      ORIGIN: "${SITE_DOMAIN}" # required by adapter-node 
 
   caddy:
     image: caddy:2-alpine
@@ -18,6 +18,8 @@ services:
         - "80:80"
         - "443:443"
         - "443:443/udp"
+    environment:
+      SITE_DOMAIN: "${SITE_DOMAIN}"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

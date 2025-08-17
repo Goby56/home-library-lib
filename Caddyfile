@@ -1,10 +1,8 @@
-http://192.168.1.223 {
+{$SITE_DOMAIN} {
     encode gzip
 
-    # Frontend
     reverse_proxy /* frontend:3000
 
-    # Backend
     handle_path /backend/* {
         reverse_proxy backend:8080
     }
