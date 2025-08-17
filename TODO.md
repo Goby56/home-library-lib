@@ -1,4 +1,6 @@
 - Show recently viewed book as search suggestions if no search term is provided
 - Implement trigram fuzzy search
-- Clean up error handling (endless match statements)
+- Clean up error handling (endless match statements). Also easier to debug from terminal and browser
 - Switch from get_user_from_cookie to extensions.get<Session>()
+- Setup https using caddy internal
+- Write a guide to run with docker
