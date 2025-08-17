@@ -35,17 +35,17 @@ async fn session_middleware(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    dotenv::dotenv().unwrap(); // Load .env file
+    let _ = dotenv::dotenv(); // Load .env file if there is one (only dev)
 
     let pool = database::init_database()
         .await
         .expect("Could not initialize database");
 
-    let frontend_url = env::var("FRONTEND_URL").unwrap();
+    let frontend_url = env::var("ALLOWED_ORIGIN").unwrap(); // Frontend
 
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin(&frontend_url) // Frontend
+            .allowed_origin(&frontend_url)
             .allowed_methods(vec!["GET", "POST"])
             .allowed_headers(vec![http::header::CONTENT_TYPE, http::header::AUTHORIZATION, http::header::ACCEPT])
             .max_age(3600);

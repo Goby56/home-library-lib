@@ -174,7 +174,7 @@ pub async fn reserve_physical_book(
         return Ok(false);
     };
     
-    if start_date < OffsetDateTime::now_utc() {
+    if start_date.date() < OffsetDateTime::now_utc().date() {
         return Ok(false);
     }
 

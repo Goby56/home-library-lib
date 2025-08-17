@@ -317,7 +317,7 @@ pub async fn register_user(state: Data<AppState>, register_data: web::Json<UserC
     let user_id = match crud::register_user(&state.db, &register_data.username, &register_data.password).await {
         Ok(Some(user_id)) => user_id,
         Ok(None) => return Err(actix_web::error::ErrorConflict("Username already exists")),
-        Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+        Err(err) => return Err(actix_web::error::ErrorInternalServerError(format!("Could not register user: {err}")))
     };
     match auth::create_session(&state.db, user_id).await {
         Ok(Some((_, token))) => Ok(web::Json(SessionResponse { token })),
