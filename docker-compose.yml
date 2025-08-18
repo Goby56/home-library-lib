@@ -4,7 +4,7 @@ services:
     environment:
       ALLOWED_ORIGIN: "${SITE_DOMAIN}"
     volumes:
-      - ${DATABASE_PATH}:/usr/src/hll/db
+      - ${DATABASE_DIR}:/usr/src/hll/db
 
   frontend:
     build: ./frontend
