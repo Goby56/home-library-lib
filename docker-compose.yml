@@ -9,6 +9,7 @@ services:
   frontend:
     build: ./frontend
     environment:
+      BACKEND_URL: "${SITE_DOMAIN}/backend"
       ORIGIN: "${SITE_DOMAIN}" # required by adapter-node 
 
   caddy:

@@ -10,4 +10,3 @@
 - Delete book
 - Add bookshelves + smart spacial representation
 - Information page
-- Dev script to start backend and frontend
