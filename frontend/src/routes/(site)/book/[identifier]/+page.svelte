@@ -154,12 +154,14 @@
             <p class="text-sm">Kategori:</p> 
             {#each data.book.genres as genre, i (genre)}
               <span class="bg-muted relative rounded p-1 w-fit text-sm font-semibold">{genre}{i < data.book.genres.length - 1 ? ', ' : ''}</span>
+            {:else}
+              <p class="text-sm"><b>-</b></p>
             {/each}
           </div>
-          <p class="text-sm">Publicerad: <b>{data.book.publication_year}</b></p>
-          <p class="text-sm">Språk: <b>{getLabelFromLanguageCode(data.book.language)}</b></p>
+          <p class="text-sm">Publicerad: <b>{data.book.publication_year || "-"}</b></p>
+          <p class="text-sm">Språk: <b>{getLabelFromLanguageCode(data.book.language) || "-"}</b></p>
           <p class="text-sm">Antal sidor: <b>{data.book.page_count || "-"}</b></p>
-          <p class="text-sm">ISBN: <b>{data.book.isbn}</b></p>
+          <p class="text-sm">ISBN: <b>{data.book.isbn || "-"}</b></p>
       </div>
     </div>
   </div>

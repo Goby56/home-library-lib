@@ -1,13 +1,9 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-  import { invalidateAll } from '$app/navigation';
-  import axios from "axios";
- 
-	let { data }: PageProps = $props();
 </script>
 
 <h1
  class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0"
 >
-Bokhyllor
+Information
 </h1>

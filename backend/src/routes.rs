@@ -40,10 +40,10 @@ pub async fn register_book(state: Data<AppState>, MultipartForm(form): Multipart
             .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
         img.save(format!("./db/images/book_covers/{}.webp", uuid.clone()))
             .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
-        return Ok(format!("Shelved {}. Access its cover at '/book_cover/{}.webp'", form.json.title, uuid));
     }
-
-    Ok(format!("Shelved {}. No cover provided", form.json.title))
+    
+    // Return the preferred identifier of the book
+    Ok(form.json.isbn.clone().unwrap_or_else(|| uuid.to_string()))
 }
 
 #[derive(Deserialize)]

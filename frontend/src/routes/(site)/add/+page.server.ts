@@ -64,10 +64,13 @@ export const actions: Actions = {
         page_count: bookForm.data.page_count,
         language: bookForm.data.language,
     }
+    
+    let cover = null;
+    if (bookForm.data.isbn) {
+        const coverURL = await fetchBook(book.isbn).then(b => b?.imageLinks?.thumbnail);
 
-    const coverURL = await fetchBook(book.isbn).then(b => b.imageLinks?.thumbnail);
-
-    const cover = await fetchBookCover(coverURL);
+        cover = await fetchBookCover(coverURL);
+    }
 
     const formData = new FormData();
 
@@ -83,8 +86,8 @@ export const actions: Actions = {
     if (response.status >= 400) {
         return setError(bookForm, response.data)
     }
-
-    redirect(303, "/book/" + bookForm.data.isbn);
+    
+    redirect(303, "/book/" + response.data);
   },
 };
 
