@@ -4,8 +4,6 @@
 - Switch from get_user_from_cookie to extensions.get<Session>()
 - Setup https using caddy internal
 - Write a guide to run with docker
-- Close drawer when removing reservation from profile page
-- Don't add current year if no year is found
 - Edit book information
 - Delete book
 - Add bookshelves + smart spacial representation

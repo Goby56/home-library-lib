@@ -76,6 +76,7 @@ async fn get_physical_book(
 
 #[derive(Serialize)]
 pub struct BookReservation {
+    pub uuid: Uuid,
     pub isbn: String,
     pub title: String,
     pub copy_id: u32,
@@ -87,9 +88,10 @@ pub async fn get_book_reservation(
     pool: &SqlitePool,
     reservation: types::Reservation,
 ) -> Result<Option<BookReservation>, sqlx::Error> {
-    let book_info: Option<(String, String, u32, u32)> = sqlx::query_as(
+    let book_info: Option<(Uuid, String, String, u32, u32)> = sqlx::query_as(
         "
         SELECT 
+            Book.uuid,
             Book.isbn,
             Book.title,
             PhysicalBook.id,
@@ -109,14 +111,15 @@ pub async fn get_book_reservation(
         return Ok(None);
     };
 
-    let Some(shelf) = get_shelf(pool, Some(book_info.3), None).await? else {
+    let Some(shelf) = get_shelf(pool, Some(book_info.4), None).await? else {
         return Ok(None);
     };
 
     Ok(Some(BookReservation {
-        isbn: book_info.0,
-        title: book_info.1,
-        copy_id: book_info.2,
+        uuid: book_info.0,
+        isbn: book_info.1,
+        title: book_info.2,
+        copy_id: book_info.3,
         shelf,
         reservation,
     }))

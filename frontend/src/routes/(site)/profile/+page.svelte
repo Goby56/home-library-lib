@@ -29,7 +29,7 @@
   let currentReservation: any = $state(undefined);
   function handleReservationClick(reservation: any) {
     if (isDesktop.current) {
-      goto(`/book/${reservation.isbn}?copy=${reservation.copy_id}`)
+      goto(`/book/${reservation.isbn || reservation.uuid}?copy=${reservation.copy_id}`)
     } else {
       drawerOpen = true; 
       currentReservation = reservation;
@@ -45,6 +45,7 @@
     invalidateAll();
     console.log(await response.text());
     pendingReservationRemoval = false;
+    drawerOpen = false;
   }
 
   let pendingUsernameChange = $state(false);
@@ -186,7 +187,7 @@
       </Drawer.Header>
       <Drawer.Footer class="pt-0 gap-5">
         <div class="flex justify-center gap-3">
-          <Button href="/book/{currentReservation.isbn}?copy={currentReservation.copy_id}" variant="secondary">
+          <Button href="/book/{currentReservation.isbn || currentReservation.uuid}?copy={currentReservation.copy_id}" variant="secondary">
             Gå till boken (hylla {currentReservation.shelf.name})
           </Button>
           <Button onclick={(e) => removeReservation(e, currentReservation)} variant="destructive">
