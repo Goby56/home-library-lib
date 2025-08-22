@@ -30,7 +30,7 @@ CREATE TRIGGER "DeleteBookTrigger"
     AFTER DELETE ON "Book"
 BEGIN
     DELETE FROM "BookFts"
-    WHERE book_id = NEW.id;
+    WHERE book_id = OLD.id;
 END;
 
 -- Direct access to fts table using aux/vocab table

@@ -60,6 +60,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::get_search_suggestions)
             .service(routes::register_book)
             .service(routes::edit_book)
+            .service(routes::delete_book)
             .service(routes::add_physical_book)
             .service(routes::edit_physical_book)
             .service(routes::get_shelves)

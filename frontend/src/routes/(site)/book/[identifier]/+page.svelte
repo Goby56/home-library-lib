@@ -249,14 +249,4 @@
   </Drawer.Content>
 </Drawer.Root>
 
-<h2 class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors mt-5 mb-2">
-  Inställningar
-</h2>
-<div class="flex flex-col gap-3 items-start">
-  <div class="flex gap-3">
-    <Button href="/book/{data.book.uuid}/edit" variant="secondary">Redigera</Button>
-    <Button variant="destructive">Ta bort bok</Button>
-  </div>
-</div>
-
 <div class="h-20"></div>

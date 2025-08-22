@@ -1,4 +1,4 @@
-use std::io::BufReader;
+use std::{fs, io::BufReader, path::PathBuf};
 use image::{self, ImageReader};
 
 use actix_web::{get, post, web::{self, Data}, HttpMessage, HttpRequest, Responder, Result};
@@ -69,6 +69,20 @@ pub async fn edit_book(state: Data<AppState>, MultipartForm(form): MultipartForm
     
     // Return the preferred identifier of the book
     Ok(form.book.isbn.clone().flatten().unwrap_or_else(|| uuid.to_string()))
+}
+
+#[post("/delete_book/{book_uuid}")]
+pub async fn delete_book(state: Data<AppState>, path: web::Path<(Uuid,)>) -> Result<impl Responder> {
+    let uuid = path.into_inner().0;
+    match crud::delete_book(&state.db, uuid).await {
+        Ok(()) => {},
+        Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
+    }
+    let file_path: PathBuf = format!("./db/images/book_covers/{}.webp", uuid.to_string()).into();
+    if file_path.exists() {
+        let _ = fs::remove_file(file_path);
+    }
+    Ok(format!("Deleted book with UUID {}", uuid.to_string()))
 }
 
 #[derive(Deserialize)]

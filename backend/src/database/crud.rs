@@ -387,6 +387,14 @@ pub async fn edit_book(pool: &SqlitePool, uuid: Uuid, book: routes::BookForm) ->
     Ok(())
 }
 
+pub async fn delete_book(pool: &SqlitePool, uuid: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query("
+        DELETE FROM Book
+        WHERE uuid = ?
+        ").bind(uuid).execute(pool).await?;
+    Ok(())
+}
+
 // Lifetimes are weird
 fn apply_update<'sep, 'v, T>(
     sep: &mut Separated<'sep, 'v, Sqlite, &str>,

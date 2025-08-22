@@ -15,7 +15,7 @@ CREATE TABLE "PhysicalBook" (
     "book" INTEGER NOT NULL,
 	"shelf"	INTEGER NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT),
-	FOREIGN KEY("book") REFERENCES "Book"("id"),
+	FOREIGN KEY("book") REFERENCES "Book"("id") ON DELETE CASCADE,
 	FOREIGN KEY("shelf") REFERENCES "Shelf"("id")
 );
 CREATE TABLE "Reservation" (

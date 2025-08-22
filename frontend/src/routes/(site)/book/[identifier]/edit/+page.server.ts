@@ -33,7 +33,8 @@ export const load: PageServerLoad = async ({ fetch, params }) => {
     
     return {
       form: form,
-      coverURL: BACKEND_URL + "/book_cover/" + book.uuid + ".webp"
+      coverURL: BACKEND_URL + "/book_cover/" + book.uuid + ".webp",
+      uuid: book.uuid
     };
 };
 
