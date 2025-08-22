@@ -4,7 +4,7 @@ use argon2::{
 };
 
 use serde::Serialize;
-use sqlx::SqlitePool;
+use sqlx::{query_builder::Separated, QueryBuilder, Sqlite, SqlitePool};
 use time::{OffsetDateTime, UtcDateTime};
 
 use rand::{self, Rng};
@@ -345,21 +345,66 @@ pub async fn create_physical_book(
     Ok(())
 }
 
-pub async fn insert_book(pool: &SqlitePool, book: routes::BookForm) -> Result<Uuid, sqlx::Error> {
+pub async fn insert_book(pool: &SqlitePool, book: routes::BookForm) -> Result<Option<Uuid>, sqlx::Error> {
+    let Some(title) = book.title else {
+        return Ok(None);
+    };
+    let Some(authors) = book.authors else {
+        return Ok(None);
+    };
     let uuid = Uuid::new_v4();
     sqlx::query("
         INSERT INTO Book (uuid, isbn, title, authors, genres, publication_year, page_count, language)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",)
     .bind(uuid)
-    .bind(book.isbn)
-    .bind(book.title)
-    .bind(book.authors)
-    .bind(book.genres)
-    .bind(book.publication_year)
-    .bind(book.page_count)
-    .bind(book.language).execute(pool).await?;
+    .bind(book.isbn.flatten())
+    .bind(title)
+    .bind(authors)
+    .bind(book.genres.flatten())
+    .bind(book.publication_year.flatten())
+    .bind(book.page_count.flatten())
+    .bind(book.language.flatten()).execute(pool).await?;
 
-    Ok(uuid)
+    Ok(Some(uuid))
+}
+
+pub async fn edit_book(pool: &SqlitePool, uuid: Uuid, book: routes::BookForm) -> Result<(), sqlx::Error> {
+    let mut qb: QueryBuilder<Sqlite> = QueryBuilder::new("UPDATE Book SET ");
+
+    let mut sep = qb.separated(", ");
+    sep.push("title = COALESCE(").push_bind_unseparated(book.title).push_unseparated(", isbn)");
+    sep.push("authors = COALESCE(").push_bind_unseparated(book.authors).push_unseparated(", authors)");
+    apply_update(&mut sep, "isbn", book.isbn);
+    apply_update(&mut sep, "genres", book.genres);
+    apply_update(&mut sep, "publication_year", book.publication_year);
+    apply_update(&mut sep, "page_count", book.page_count);
+    apply_update(&mut sep, "language", book.language);
+    
+    sep.push_unseparated(" WHERE uuid = ").push_bind_unseparated(uuid);
+    
+    qb.build().execute(pool).await?;
+
+    Ok(())
+}
+
+// Lifetimes are weird
+fn apply_update<'sep, 'v, T>(
+    sep: &mut Separated<'sep, 'v, Sqlite, &str>,
+    column: &str,
+    option: Option<Option<T>>,
+) 
+where
+    T: sqlx::Encode<'v, Sqlite> + sqlx::Type<Sqlite> + 'v,
+{
+    match option {
+        Some(Some(v)) => {
+            sep.push(format!("{column} = ")).push_bind_unseparated(v);
+        }
+        Some(None) => {
+            sep.push(format!("{column} = NULL"));
+        }
+        None => {}
+    }
 }
 
 #[derive(sqlx::FromRow)]

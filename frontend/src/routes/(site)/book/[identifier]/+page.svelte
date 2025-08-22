@@ -4,6 +4,7 @@
   import PhysicalBookManagerButton from './PhysicalBookManagerButton.svelte';
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
+  import EditIcon from "@lucide/svelte/icons/pencil";
   import { getLabelFromLanguageCode } from "$lib/utils";
   import * as Drawer from "$lib/components/ui/drawer/index.js";
   import { buttonVariants } from "$lib/components/ui/button/index.js";
@@ -107,9 +108,11 @@
 
   const isDesktop = new MediaQuery("(min-width: 768px)");
 
+  let drawerOpen = $state(false);
+
 </script>
 
-<div class="flex flex-col pb-3 md:mb-0 mb-20">
+<div class="flex flex-col pb-3">
   <div class="grid md:grid-cols-2 grid-cols-1 gap-3">
     <div class="flex justify-center items-center">
       <img src="{coverImage}" alt="book cover"
@@ -150,18 +153,18 @@
         </div>
       </div>
       <div class="flex flex-col gap-2">
-          <div class="flex flex-wrap items-center gap-1">
-            <p class="text-sm">Kategori:</p> 
-            {#each data.book.genres as genre, i (genre)}
-              <span class="bg-muted relative rounded p-1 w-fit text-sm font-semibold">{genre}{i < data.book.genres.length - 1 ? ', ' : ''}</span>
-            {:else}
-              <p class="text-sm"><b>-</b></p>
-            {/each}
-          </div>
-          <p class="text-sm">Publicerad: <b>{data.book.publication_year || "-"}</b></p>
-          <p class="text-sm">Språk: <b>{getLabelFromLanguageCode(data.book.language) || "-"}</b></p>
-          <p class="text-sm">Antal sidor: <b>{data.book.page_count || "-"}</b></p>
-          <p class="text-sm">ISBN: <b>{data.book.isbn || "-"}</b></p>
+        <div class="flex flex-wrap items-center gap-1">
+          <p class="text-sm">Kategori:</p> 
+          {#each data.book.genres as genre, i (genre)}
+            <span class="bg-muted relative rounded p-1 w-fit text-sm font-semibold">{genre}</span>
+          {:else}
+            <p class="text-sm"><b>-</b></p>
+          {/each}
+        </div>
+        <p class="text-sm">Publicerad: <b>{data.book.publication_year || "-"}</b></p>
+        <p class="text-sm">Språk: <b>{getLabelFromLanguageCode(data.book.language) || "-"}</b></p>
+        <p class="text-sm">Antal sidor: <b>{data.book.page_count || "-"}</b></p>
+        <p class="text-sm">ISBN: <b>{data.book.isbn || "-"}</b></p>
       </div>
     </div>
   </div>
@@ -182,7 +185,7 @@
   {/if}
 {/snippet}
 
-<div class="md:flex flex-col justify-start items-center mb-20 hidden">
+<div class="md:flex flex-col justify-start items-center hidden">
   <ReservationCalendar bind:value={reservationDates} user={data.user} numberOfMonths={3} {reservations}/>
   <div class="flex justify-center items-center gap-3">
     <div class="flex gap-2 items-center">
@@ -194,14 +197,20 @@
   </div>
 </div>
 
-<Drawer.Root>
+<div class="flex justify-center">
+  <div class="md:hidden flex bg-background justify-center w-full pb-3 px-5 pt-2 gap-3 rounded-t-md fixed bottom-0">
+    <Button class="w-full text-lg font-semibold" onclick={() => drawerOpen = true}>
+      Reservera
+    </Button>
+    <Button href="/book/{data.book.uuid}/edit">
+      <EditIcon/>
+    </Button>
+  </div>
+</div>
+
+<Drawer.Root bind:open={drawerOpen}>
   {#if data.copies.length != 0}
     <Drawer.Trigger class="flex justify-center">
-      <div class="md:hidden flex bg-background justify-center w-full pb-3 px-5 pt-2 rounded-t-md fixed bottom-0">
-        <Button class="w-full text-lg font-semibold">
-          Reservera
-        </Button>
-      </div>
     </Drawer.Trigger>
   {/if}
   <Drawer.Content>
@@ -224,7 +233,7 @@
               {#if data.copies.length != 0}
                 <p class="text-center text-muted-foreground text-sm px-2">Välj vilken bokhylla du vill låna boken från</p>
               {:else}
-                <p class="text-center text-destructive text-sm px-2">Denna bok kan inte reserveras</p>
+                <p class="text-center text-destructive text-sm px-2">Denna bok kan inte reserveras då den inte finns i någon bokhylla</p>
               {/if}
             {/if}
           {/if}
@@ -239,3 +248,15 @@
     </div>
   </Drawer.Content>
 </Drawer.Root>
+
+<h2 class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors mt-5 mb-2">
+  Inställningar
+</h2>
+<div class="flex flex-col gap-3 items-start">
+  <div class="flex gap-3">
+    <Button href="/book/{data.book.uuid}/edit" variant="secondary">Redigera</Button>
+    <Button variant="destructive">Ta bort bok</Button>
+  </div>
+</div>
+
+<div class="h-20"></div>

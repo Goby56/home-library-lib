@@ -4,6 +4,7 @@
   import SuperDebug from "sveltekit-superforms";
   import * as Form from "$lib/components/ui/form/index.js";
   import ImagePlusIcon from "@lucide/svelte/icons/image-plus";
+  import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { Input } from "$lib/components/ui/input/index.js";
   import { bookFormSchema, type FormSchema } from "./book-form-schema";
   import { languageCodes } from "$lib/utils";
@@ -22,8 +23,8 @@
   import { MediaQuery } from "svelte/reactivity";
   import { mode } from "mode-watcher";
  
-  let { data }: { data: { form: SuperValidated<Infer<FormSchema>> } & any } =
-    $props();
+  let { data, edit }: { data: { form: SuperValidated<Infer<FormSchema>>, coverURL: string }, 
+    edit: boolean & any } = $props();
   
   const isDesktop = new MediaQuery("(min-width: 768px)");
  
@@ -34,7 +35,7 @@
   const { form: formData, enhance, errors } = form;
 
   const coverImageFile = fileProxy(form, 'cover')
-  let coverImageURL = $state(data.coverURL ?? placeHolderImage);
+  let coverImageURL = $state(data.coverURL || placeHolderImage);
   let pendingCompression = $state(false);
 
   function onCoverImageChange(event: Event) {
@@ -62,16 +63,18 @@
       {#snippet children({ props })}
         <div class="flex gap-3">
           <Input {...props} placeholder="ISBN" bind:value={$formData.isbn} />
-          <Tooltip.Provider>
-            <Tooltip.Root>
-              <Tooltip.Trigger>
-                <Button href="/add?isbn={$formData.isbn}">Sök efter bok</Button>
-              </Tooltip.Trigger>
-              <Tooltip.Content>
-                <p>Fyll i bokens information automatiskt</p>
-              </Tooltip.Content>
-            </Tooltip.Root>
-          </Tooltip.Provider>
+          {#if !edit}
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <Button href="/add?isbn={$formData.isbn}">Sök efter bok</Button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <p>Fyll i bokens information automatiskt</p>
+                </Tooltip.Content>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          {/if}
         </div>
       {/snippet}
     </Form.Control>
@@ -202,9 +205,14 @@
 
   </div>
   
-  <div class="flex md:justify-end justify-center">
+  <div class="flex justify-center">
   {#if pendingCompression}
-    <Form.Button disabled>Lägg till bok</Form.Button>
+    <Form.Button disabled>
+      Komprimerar omslag
+      <LoaderCircleIcon class="animate-spin"/>
+    </Form.Button>
+  {:else if edit}
+    <Form.Button>Uppdatera bok</Form.Button>
   {:else}
     <Form.Button>Lägg till bok</Form.Button>
   {/if}

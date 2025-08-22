@@ -9,7 +9,7 @@ const imageFileValidator = (file: File | undefined) => {
 };
 
 export const bookFormSchema = z.object({
-    isbn: z.string().min(10).max(13).nullable(),
+    isbn: z.string().nullable(),
     title: z.string().min(1),
     authors: z.string().min(1),
     genres: z.string().nullable(),

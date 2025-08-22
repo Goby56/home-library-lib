@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from "./$types.js";
 import { superValidate, fail, message, setError } from "sveltekit-superforms";
 import { zod } from "sveltekit-superforms/adapters";
-import { bookFormSchema } from "./book-form-schema.js";
+import { bookFormSchema } from "$lib/components/book-form/book-form-schema.js";
 import { parseDate } from 'chrono-node';
 import { error, redirect } from "@sveltejs/kit";
 import { backendPOST } from "$lib/utils-server.js";
@@ -74,11 +74,11 @@ export const actions: Actions = {
 
     const formData = new FormData();
 
-    formData.append("json", new Blob([JSON.stringify(book)], { type: "application/json" }))
+    formData.append("book", new Blob([JSON.stringify(book)], { type: "application/json" }))
     if (bookForm.data.cover) {
-        formData.append("file", bookForm.data.cover);
+        formData.append("cover", bookForm.data.cover);
     } else if (cover) {
-        formData.append("file", cover);
+        formData.append("cover", cover);
     }
 
     let response = await backendPOST(event.cookies, "/register_book", formData);

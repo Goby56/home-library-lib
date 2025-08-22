@@ -5,36 +5,43 @@ use actix_web::{get, post, web::{self, Data}, HttpMessage, HttpRequest, Responde
 
 use actix_multipart::form::{json::Json as MpJson, tempfile::TempFile, MultipartForm};
 use serde::{Serialize, Deserialize};
+use serde_with::rust::double_option;
 use time::OffsetDateTime;
 use uuid::Uuid;
 use crate::{auth::{self, Session}, database::{crud, search}, types, AppState};
 
 #[derive(Debug, MultipartForm)]
-struct ShelveForm {
+struct BookAndCoverForm {
     #[multipart(limit = "100MB")]
-    file: Option<TempFile>,
-    json: MpJson<BookForm>,
+    cover: Option<TempFile>,
+    book: MpJson<BookForm>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct BookForm {
-    pub isbn: Option<String>,
-    pub title: String,
-    pub authors: String,
-    pub genres: Option<String>,
-    pub publication_year: Option<i16>,
-    pub page_count: Option<u16>,
-    pub language: Option<String>,
+    #[serde(default, with = "double_option")]
+    pub isbn: Option<Option<String>>,
+    pub title: Option<String>,
+    pub authors: Option<String>,
+    #[serde(default, with = "double_option")]
+    pub genres: Option<Option<String>>,
+    #[serde(default, with = "double_option")]
+    pub publication_year: Option<Option<i16>>,
+    #[serde(default, with = "double_option")]
+    pub page_count: Option<Option<u16>>,
+    #[serde(default, with = "double_option")]
+    pub language: Option<Option<String>>,
 }
 
 #[post("/register_book")]
-pub async fn register_book(state: Data<AppState>, MultipartForm(form): MultipartForm<ShelveForm>) -> actix_web::Result<String> {
-    let uuid = match crud::insert_book(&state.db, form.json.clone()).await {
-        Ok(uuid) => uuid.to_string(),
+pub async fn register_book(state: Data<AppState>, MultipartForm(form): MultipartForm<BookAndCoverForm>) -> actix_web::Result<String> {
+    let uuid = match crud::insert_book(&state.db, form.book.clone()).await {
+        Ok(Some(uuid)) => uuid.to_string(),
+        Ok(None) => return Err(actix_web::error::ErrorInternalServerError("Title and authors has to be provided")),
         Err(err) => return Err(actix_web::error::ErrorInternalServerError(err.to_string()))
     };
 
-    if let Some(file) = form.file {
+    if let Some(file) = form.cover {
         let reader = BufReader::new(file.file.reopen()?);
         let img = ImageReader::new(reader).with_guessed_format()?.decode()
             .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
@@ -43,7 +50,25 @@ pub async fn register_book(state: Data<AppState>, MultipartForm(form): Multipart
     }
     
     // Return the preferred identifier of the book
-    Ok(form.json.isbn.clone().unwrap_or_else(|| uuid.to_string()))
+    Ok(form.book.isbn.clone().flatten().unwrap_or_else(|| uuid.to_string()))
+}
+
+#[post("/edit_book/{book_uuid}")]
+pub async fn edit_book(state: Data<AppState>, MultipartForm(form): MultipartForm<BookAndCoverForm>, path: web::Path<(Uuid,)>) -> actix_web::Result<String> {
+    let uuid = path.into_inner().0;
+    let _ = crud::edit_book(&state.db, uuid, form.book.clone()).await
+        .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()));
+
+    if let Some(file) = form.cover {
+        let reader = BufReader::new(file.file.reopen()?);
+        let img = ImageReader::new(reader).with_guessed_format()?.decode()
+            .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
+        img.save(format!("./db/images/book_covers/{}.webp", uuid.to_string()))
+            .map_err(|err| actix_web::error::ErrorInternalServerError(err.to_string()))?;
+    }
+    
+    // Return the preferred identifier of the book
+    Ok(form.book.isbn.clone().flatten().unwrap_or_else(|| uuid.to_string()))
 }
 
 #[derive(Deserialize)]

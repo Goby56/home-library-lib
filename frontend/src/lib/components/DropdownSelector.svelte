@@ -10,7 +10,7 @@
   let { name, value = $bindable(""), items, translations }: 
     { 
       name: string,
-      value: string, 
+      value: string | null, 
       items: { 
         value: string, 
         label: string
