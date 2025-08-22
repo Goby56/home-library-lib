@@ -18,7 +18,7 @@
   let searchBarOpen = $state(false);
 </script>
 
-<header class="z-50 w-full fixed {searchBarOpen ? 'h-screen md:h-16' : 'h-16'} flex items-center gap-2 bg-background p-1 px-2">
+<header class="z-50 w-full fixed {searchBarOpen ? 'h-screen md:h-16' : 'h-16'} justify-start flex flex-col gap-2 bg-background p-1 px-2">
   <div class="w-full flex items-center justify-center md:justify-between gap-2">
     {#if isDesktop.current || !searchBarOpen}
       <div class="flex justify-start items-center gap-2 md:pl-2">

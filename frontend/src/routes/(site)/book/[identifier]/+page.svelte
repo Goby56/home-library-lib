@@ -116,7 +116,7 @@
   <div class="grid md:grid-cols-2 grid-cols-1 gap-3">
     <div class="flex justify-center items-center">
       <img src="{coverImage}" alt="book cover"
-      class="rounded-xl md:h-80 h-60">
+      class="rounded-xl md:h-96 h-60">
     </div>
 
     <div class="flex flex-col gap-3">
@@ -168,6 +168,10 @@
       </div>
     </div>
   </div>
+</div>
+
+<div class="flex justify-center">
+  <Button variant="link" class="text-muted-foreground hover:text-foreground" href="/book/{data.book.uuid}/edit">Redigera bokens information</Button>
 </div>
 
 {#snippet reservationButton()}

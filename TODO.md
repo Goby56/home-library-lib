@@ -3,8 +3,6 @@
 - Clean up error handling (endless match statements). Also easier to debug from terminal and browser
 - Switch from get_user_from_cookie to extensions.get<Session>()
 - Setup https using caddy internal
-- Edit book information
-- Delete book
 - Add bookshelves + smart spacial representation
 - Information page
 - Compress book covers, especially user uploaded (both on front and backend)
