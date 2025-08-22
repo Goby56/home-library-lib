@@ -6,3 +6,4 @@
 - Add bookshelves + smart spacial representation
 - Information page
 - Compress book covers, especially user uploaded (both on front and backend)
+- Batch scan/upload of books

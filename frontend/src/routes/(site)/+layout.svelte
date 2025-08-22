@@ -9,6 +9,7 @@
   import HashIcon from "@lucide/svelte/icons/hash";
   import ContainerIcon from "@lucide/svelte/icons/container";
   import LibraryIcon from "@lucide/svelte/icons/library";
+  import GalleryHorizontalEnd from "@lucide/svelte/icons/gallery-horizontal-end";
 
   import type { LayoutProps } from './$types';
   import Button from "$lib/components/ui/button/button.svelte";
@@ -54,6 +55,10 @@
         <Button href="/add" variant="ghost" class="justify-start p-2 h-fit">
           <PencilLineIcon/>
           Manuell inmatning
+        </Button> 
+        <Button href="/add" variant="ghost" class="justify-start p-2 h-fit">
+          <GalleryHorizontalEnd/>
+          Bulk inskanning
         </Button> 
       </div>
     </div>
